@@ -1099,8 +1099,8 @@ class NetworkTrainer:
         if is_main_process:
             ckpt_name = train_util.get_last_ckpt_name(args, "." + args.save_model_as)
             save_model(ckpt_name, network, global_step, num_train_epochs, force_sync_upload=True)
-            self.sample_images(accelerator, args, epoch + 1, global_step, accelerator.device, vae, tokenizer, text_encoder, unet)
-            print("model saved.")
+            if (epoch + 1) % args.save_every_n_epochs != 0:  #Generate sample image even when it is the last epoch
+                self.sample_images(accelerator, args, epoch + 1, global_step, accelerator.device, vae, tokenizer, text_encoder, unet)
 
         if is_main_process:
             network = accelerator.unwrap_model(network)
@@ -1109,6 +1109,7 @@ class NetworkTrainer:
 
         if is_main_process and (args.save_state or args.save_state_on_train_end):
             train_util.save_state_on_train_end(args, accelerator)
+        print("model saved.")
 
 
 def setup_parser() -> argparse.ArgumentParser:
