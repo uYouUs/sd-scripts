@@ -380,6 +380,9 @@ class NetworkTrainer:
         )
 
         # 学習ステップ数を計算する
+        args.max_train_epochs = math.ceil(1400 / math.ceil(len(train_dataloader) / accelerator.num_processes / args.gradient_accumulation_steps))
+        args.save_every_n_epochs = math.ceil(args.max_train_epochs/15)
+        if args.sample_every_n_epochs: args.sample_every_n_epochs = args.save_every_n_epochs
         if args.max_train_epochs is not None:
             args.max_train_steps = args.max_train_epochs * math.ceil(
                 len(train_dataloader) / accelerator.num_processes / args.gradient_accumulation_steps
@@ -881,6 +884,7 @@ class NetworkTrainer:
         self.sample_images(accelerator, args, 0, global_step, accelerator.device, vae, tokenizer, text_encoder, unet)
 
         # training loop
+        saved_count = 0
         if initial_step > 0:  # only if skip_until_initial_step is specified
             for skip_epoch in range(epoch_to_start):  # skip epochs
                 print(f"skipping epoch {skip_epoch+1} because initial_step (multiplied) is {initial_step}")
@@ -1071,10 +1075,11 @@ class NetworkTrainer:
             if args.save_every_n_epochs is not None:
                 saving = (epoch + 1) % args.save_every_n_epochs == 0 and (epoch + 1) < num_train_epochs
                 if is_main_process and saving:
-                    ckpt_name = train_util.get_epoch_ckpt_name(args, "." + args.save_model_as, epoch + 1)
+                    saved_count = saved_count + 1
+                    ckpt_name = train_util.get_epoch_ckpt_name(args, "." + args.save_model_as, saved_count)
                     save_model(ckpt_name, accelerator.unwrap_model(network), global_step, epoch + 1)
 
-                    remove_epoch_no = train_util.get_remove_epoch_no(args, epoch + 1)
+                    remove_epoch_no = train_util.get_remove_epoch_no(args, saved_count)
                     if remove_epoch_no is not None:
                         remove_ckpt_name = train_util.get_epoch_ckpt_name(args, "." + args.save_model_as, remove_epoch_no)
                         remove_model(remove_ckpt_name)

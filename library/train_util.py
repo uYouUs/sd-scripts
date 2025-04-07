@@ -4927,7 +4927,7 @@ def get_remove_epoch_no(args: argparse.Namespace, epoch_no: int):
     if args.save_last_n_epochs is None:
         return None
 
-    remove_epoch_no = epoch_no - args.save_every_n_epochs * args.save_last_n_epochs
+    remove_epoch_no = epoch_no - args.save_last_n_epochs
     if remove_epoch_no < 0:
         return None
     return remove_epoch_no
@@ -5527,13 +5527,13 @@ def sample_images_common(
         cuda_rng_state = torch.cuda.get_rng_state() if torch.cuda.is_available() else None
     except Exception:
         pass
-
+    short_epoch = int(epoch/args.save_every_n_epochs)
     if distributed_state.num_processes <= 1:
         # If only one device is available, just use the original prompt list. We don't need to care about the distribution of prompts.
         with torch.no_grad():
             for prompt_dict in prompts:
                 sample_image_inference(
-                    accelerator, args, pipeline, save_dir, prompt_dict, epoch, steps, prompt_replacement, controlnet=controlnet
+                    accelerator, args, pipeline, save_dir, prompt_dict, short_epoch, steps, prompt_replacement, controlnet=controlnet
                 )
     else:
         # Creating list with N elements, where each element is a list of prompt_dicts, and N is the number of processes available (number of devices available)
@@ -5546,7 +5546,7 @@ def sample_images_common(
             with distributed_state.split_between_processes(per_process_prompts) as prompt_dict_lists:
                 for prompt_dict in prompt_dict_lists[0]:
                     sample_image_inference(
-                        accelerator, args, pipeline, save_dir, prompt_dict, epoch, steps, prompt_replacement, controlnet=controlnet
+                        accelerator, args, pipeline, save_dir, prompt_dict, short_epoch, steps, prompt_replacement, controlnet=controlnet
                     )
 
     # clear pipeline and cache to reduce vram usage
@@ -5643,10 +5643,10 @@ def sample_image_inference(
     # but adding 'enum' to the filename should be enough
 
     ts_str = time.strftime("%Y%m%d%H%M%S", time.localtime())
-    num_suffix = f"e{epoch:06d}" if epoch is not None else f"{steps:06d}"
+    num_suffix = f"{epoch:02d}" if epoch is not None else f"{steps:06d}"
     seed_suffix = "" if seed is None else f"_{seed}"
     i: int = prompt_dict["enum"]
-    img_filename = f"{'' if args.output_name is None else args.output_name + '_'}{num_suffix}_{i:02d}_{ts_str}{seed_suffix}.png"
+    img_filename = f"{'' if args.output_name is None else args.output_name + '-'}{num_suffix}_{i:02d}_{ts_str}{seed_suffix}.png"
     image.save(os.path.join(save_dir, img_filename))
 
     # wandb有効時のみログを送信
