@@ -380,8 +380,10 @@ class NetworkTrainer:
         )
 
         # 学習ステップ数を計算する
-        args.max_train_epochs = math.ceil(1400 / math.ceil(len(train_dataloader) / accelerator.num_processes / args.gradient_accumulation_steps))
-        args.save_every_n_epochs = math.ceil(args.max_train_epochs/15)
+        if args.real_epoch is None: args.real_epoch = 15
+        if args.real_step_estimate is None: args.real_step_estimate = 1400
+        args.max_train_epochs = math.ceil(args.real_step_estimate / math.ceil(len(train_dataloader) / accelerator.num_processes / args.gradient_accumulation_steps))
+        args.save_every_n_epochs = math.ceil(args.max_train_epochs/args.real_epoch)
         if args.sample_every_n_epochs: args.sample_every_n_epochs = args.save_every_n_epochs
         if args.max_train_epochs is not None:
             args.max_train_steps = args.max_train_epochs * math.ceil(
@@ -1095,18 +1097,18 @@ class NetworkTrainer:
         metadata["ss_training_finished_at"] = str(time.time())
 
         if is_main_process:
+            ckpt_name = train_util.get_last_ckpt_name(args, "." + args.save_model_as)
+            save_model(ckpt_name, network, global_step, num_train_epochs, force_sync_upload=True)
+            self.sample_images(accelerator, args, epoch + 1, global_step, accelerator.device, vae, tokenizer, text_encoder, unet)
+            print("model saved.")
+
+        if is_main_process:
             network = accelerator.unwrap_model(network)
 
         accelerator.end_training()
 
         if is_main_process and (args.save_state or args.save_state_on_train_end):
             train_util.save_state_on_train_end(args, accelerator)
-
-        if is_main_process:
-            ckpt_name = train_util.get_last_ckpt_name(args, "." + args.save_model_as)
-            save_model(ckpt_name, network, global_step, num_train_epochs, force_sync_upload=True)
-
-            print("model saved.")
 
 
 def setup_parser() -> argparse.ArgumentParser:
@@ -1229,6 +1231,18 @@ def setup_parser() -> argparse.ArgumentParser:
         default=None,
         help="initial step number including all epochs, 0 means first step (same as not specifying). overwrites initial_epoch."
         + " / 初期ステップ数、全エポックを含むステップ数、0で最初のステップ（未指定時と同じ）。initial_epochを上書きする",
+    )
+    parser.add_argument(
+        "--real_step_estimate",
+        type=int,
+        default=None,
+        help="network dimensions (depends on each network) / モジュールの次元数（ネットワークにより定義は異なります）",
+    )
+    parser.add_argument(
+        "--real_epoch",
+        type=int,
+        default=None,
+        help="network dimensions (depends on each network) / モジュールの次元数（ネットワークにより定義は異なります）",
     )
     # parser.add_argument("--loraplus_lr_ratio", default=None, type=float, help="LoRA+ learning rate ratio")
     # parser.add_argument("--loraplus_unet_lr_ratio", default=None, type=float, help="LoRA+ UNet learning rate ratio")
