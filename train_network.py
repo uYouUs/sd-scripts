@@ -383,7 +383,7 @@ class NetworkTrainer:
         if args.real_epoch is None: args.real_epoch = 15
         if args.real_step_estimate is None: args.real_step_estimate = 1400
         args.max_train_epochs = math.ceil(args.real_step_estimate / math.ceil(len(train_dataloader) / accelerator.num_processes / args.gradient_accumulation_steps))
-        args.save_every_n_epochs = math.ceil(args.max_train_epochs/args.real_epoch)
+        args.save_every_n_epochs = math.floor(args.max_train_epochs/args.real_epoch)
         if args.sample_every_n_epochs: args.sample_every_n_epochs = args.save_every_n_epochs
         if args.max_train_epochs is not None:
             args.max_train_steps = args.max_train_epochs * math.ceil(
@@ -1099,8 +1099,8 @@ class NetworkTrainer:
         if is_main_process:
             ckpt_name = train_util.get_last_ckpt_name(args, "." + args.save_model_as)
             save_model(ckpt_name, network, global_step, num_train_epochs, force_sync_upload=True)
-            if (epoch + 1) % args.save_every_n_epochs != 0:  #Generate sample image even when it is the last epoch
-                self.sample_images(accelerator, args, epoch + 1, global_step, accelerator.device, vae, tokenizer, text_encoder, unet)
+            if (epoch + 1) % args.save_every_n_epochs != 0:  # Generate sample image even when it is the last epoch
+                self.sample_images(accelerator, args, math.ceil((epoch + 1)/args.save_every_n_epochs)*args.real_epoch, global_step, accelerator.device, vae, tokenizer, text_encoder, unet)
 
         if is_main_process:
             network = accelerator.unwrap_model(network)
