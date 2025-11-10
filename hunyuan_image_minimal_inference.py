@@ -283,7 +283,7 @@ def load_dit_model(
     if not args.lycoris and args.lora_weight is not None and len(args.lora_weight) > 0:
         lora_weights_list = []
         for lora_weight in args.lora_weight:
-            logger.info(f"Loading LoRA weight from: {lora_weight}")
+            print(f"Loading LoRA weight from: {lora_weight}")
             lora_sd = load_file(lora_weight)  # load on CPU, dtype is as is
             # lora_sd = filter_lora_state_dict(lora_sd, args.include_patterns, args.exclude_patterns)
             lora_weights_list.append(lora_sd)
@@ -320,7 +320,7 @@ def load_dit_model(
             state_dict = model.fp8_optimization(state_dict, device, move_to_device, use_scaled_mm=False)  # args.fp8_fast)
 
             info = model.load_state_dict(state_dict, strict=True, assign=True)
-            logger.info(f"Loaded FP8 optimized weights: {info}")
+            print(f"Loaded FP8 optimized weights: {info}")
 
     # if we only want to save the model, we can skip the rest
     if args.save_merged_model:
@@ -332,18 +332,18 @@ def load_dit_model(
         target_device = None
 
         if dit_weight_dtype is not None:  # in case of args.fp8 and not args.fp8_scaled
-            logger.info(f"Convert model to {dit_weight_dtype}")
+            print(f"Convert model to {dit_weight_dtype}")
             target_dtype = dit_weight_dtype
 
         if args.blocks_to_swap == 0:
-            logger.info(f"Move model to device: {device}")
+            print(f"Move model to device: {device}")
             target_device = device
 
         model.to(target_device, target_dtype)  # move and cast  at the same time. this reduces redundant copy operations
 
     # if args.compile:
     #     compile_backend, compile_mode, compile_dynamic, compile_fullgraph = args.compile_args
-    #     logger.info(
+    #     print(
     #         f"Torch Compiling[Backend: {compile_backend}; Mode: {compile_mode}; Dynamic: {compile_dynamic}; Fullgraph: {compile_fullgraph}]"
     #     )
     #     torch._dynamo.config.cache_size_limit = 32
@@ -357,7 +357,7 @@ def load_dit_model(
     #         )
 
     if args.blocks_to_swap > 0:
-        logger.info(f"Enable swap {args.blocks_to_swap} blocks to CPU from device: {device}")
+        print(f"Enable swap {args.blocks_to_swap} blocks to CPU from device: {device}")
         model.enable_block_swap(args.blocks_to_swap, device, supports_backward=False)
         model.move_to_device_except_swap_blocks(device)
         model.prepare_block_swap_before_forward()
@@ -406,7 +406,7 @@ def merge_lora_weights(
         else:
             lora_multiplier = 1.0
 
-        logger.info(f"Loading LoRA weights from {lora_weight} with multiplier {lora_multiplier}")
+        print(f"Loading LoRA weights from {lora_weight} with multiplier {lora_multiplier}")
         weights_sd = load_file(lora_weight)
         if converter is not None:
             weights_sd = converter(weights_sd)
@@ -417,21 +417,21 @@ def merge_lora_weights(
             include_pattern = include_patterns[i]
             regex_include = re.compile(include_pattern)
             weights_sd = {k: v for k, v in weights_sd.items() if regex_include.search(k)}
-            logger.info(f"Filtered keys with include pattern {include_pattern}: {original_key_count} -> {len(weights_sd.keys())}")
+            print(f"Filtered keys with include pattern {include_pattern}: {original_key_count} -> {len(weights_sd.keys())}")
         if exclude_patterns is not None and len(exclude_patterns) > i:
             original_key_count_ex = len(weights_sd.keys())
             exclude_pattern = exclude_patterns[i]
             regex_exclude = re.compile(exclude_pattern)
             weights_sd = {k: v for k, v in weights_sd.items() if not regex_exclude.search(k)}
-            logger.info(
+            print(
                 f"Filtered keys with exclude pattern {exclude_pattern}: {original_key_count_ex} -> {len(weights_sd.keys())}"
             )
         if len(weights_sd) != original_key_count:
             remaining_keys = list(set([k.split(".", 1)[0] for k in weights_sd.keys()]))
             remaining_keys.sort()
-            logger.info(f"Remaining LoRA modules after filtering: {remaining_keys}")
+            print(f"Remaining LoRA modules after filtering: {remaining_keys}")
             if len(weights_sd) == 0:
-                logger.warning("No keys left after filtering.")
+                print("No keys left after filtering.")
 
         if lycoris:
             lycoris_net, _ = create_network_from_weights(
@@ -449,20 +449,20 @@ def merge_lora_weights(
             network.merge_to(None, model, weights_sd, device=device, non_blocking=True)
 
         synchronize_device(device)
-        logger.info("LoRA weights loaded")
+        print("LoRA weights loaded")
 
     # save model here before casting to dit_weight_dtype
     if save_merged_model:
-        logger.info(f"Saving merged model to {save_merged_model}")
+        print(f"Saving merged model to {save_merged_model}")
         mem_eff_save_file(model.state_dict(), save_merged_model)  # save_file needs a lot of memory
-        logger.info("Merged model saved")
+        print("Merged model saved")
 
 
 # endregion
 
 
 def decode_latent(vae: HunyuanVAE2D, latent: torch.Tensor, device: torch.device) -> torch.Tensor:
-    logger.info(f"Decoding image. Latent shape {latent.shape}, device {device}")
+    print(f"Decoding image. Latent shape {latent.shape}, device {device}")
 
     vae.to(device)
     with torch.no_grad():
@@ -471,7 +471,7 @@ def decode_latent(vae: HunyuanVAE2D, latent: torch.Tensor, device: torch.device)
     pixels = pixels.to("cpu", dtype=torch.float32)  # move to CPU and convert to float32 (bfloat16 is not supported by numpy)
     vae.to("cpu")
 
-    logger.info(f"Decoded. Pixel shape {pixels.shape}")
+    print(f"Decoded. Pixel shape {pixels.shape}")
     return pixels[0]  # remove batch dimension
 
 
@@ -521,10 +521,10 @@ def prepare_text_inputs(
             return
         model_is_moved = True
 
-        logger.info(f"Moving DiT and Text Encoder to appropriate device: {device} or CPU")
+        print(f"Moving DiT and Text Encoder to appropriate device: {device} or CPU")
         if shared_models and "model" in shared_models:  # DiT model is shared
             if args.blocks_to_swap > 0:
-                logger.info("Waiting for 5 seconds to finish block swap")
+                print("Waiting for 5 seconds to finish block swap")
                 time.sleep(5)
             model = shared_models["model"]
             model.to("cpu")
@@ -533,7 +533,7 @@ def prepare_text_inputs(
         text_encoder_vlm.to(vl_device)  # If text_encoder_cpu is True, this will be CPU
         text_encoder_byt5.to(vl_device)
 
-    logger.info("Encoding prompt with Text Encoder")
+    print("Encoding prompt with Text Encoder")
 
     prompt = args.prompt
     cache_key = prompt
@@ -624,12 +624,12 @@ def generate(
     args.seed = seed  # set seed to args for saving
 
     if precomputed_text_data is not None:
-        logger.info("Using precomputed text data.")
+        print("Using precomputed text data.")
         context = precomputed_text_data["context"]
         context_null = precomputed_text_data["context_null"]
 
     else:
-        logger.info("No precomputed data. Preparing image and text inputs.")
+        print("No precomputed data. Preparing image and text inputs.")
         context, context_null = prepare_text_inputs(args, device, shared_models)
 
     if shared_models is None or "model" not in shared_models:
@@ -644,7 +644,7 @@ def generate(
             shared_models["model"] = model
     else:
         # use shared model
-        logger.info("Using shared DiT model.")
+        print("Using shared DiT model.")
         model: hunyuan_image_models.HYImageDiffusionTransformer = shared_models["model"]
         model.move_to_device_except_swap_blocks(device)  # Handles block swap correctly
         model.prepare_block_swap_before_forward()
@@ -666,11 +666,11 @@ def generate_body(
     seed_g.manual_seed(seed)
 
     height, width = check_inputs(args)
-    logger.info(f"Image size: {height}x{width} (HxW), infer_steps: {args.infer_steps}")
+    print(f"Image size: {height}x{width} (HxW), infer_steps: {args.infer_steps}")
 
     # image generation ######
 
-    logger.info(f"Prompt: {context['prompt']}")
+    print(f"Prompt: {context['prompt']}")
 
     embed = context["embed"].to(device, dtype=torch.bfloat16)
     mask = context["mask"].to(device, dtype=torch.bfloat16)
@@ -692,7 +692,7 @@ def generate_body(
     shape = (1, num_channels_latents, height // hunyuan_image_vae.VAE_SCALE_FACTOR, width // hunyuan_image_vae.VAE_SCALE_FACTOR)
     latents = randn_tensor(shape, generator=seed_g, device=device, dtype=torch.bfloat16)
 
-    logger.info(
+    print(
         f"Embed: {embed.shape}, embed byt5: {embed_byt5.shape}, negative_embed: {negative_embed.shape}, negative embed byt5: {negative_embed_byt5.shape}, latents: {latents.shape}"
     )
 
@@ -803,7 +803,7 @@ def save_latent(latent: torch.Tensor, args: argparse.Namespace, height: int, wid
 
     sd = {"latent": latent.contiguous()}
     save_file(sd, latent_path, metadata=metadata)
-    logger.info(f"Latent saved to: {latent_path}")
+    print(f"Latent saved to: {latent_path}")
 
     return latent_path
 
@@ -834,7 +834,7 @@ def save_images(sample: torch.Tensor, args: argparse.Namespace, original_base_na
     image = Image.fromarray(x)
     image.save(os.path.join(save_path, f"{image_name}.png"))
 
-    logger.info(f"Sample images saved to: {save_path}/{image_name}")
+    print(f"Sample images saved to: {save_path}/{image_name}")
 
     return f"{save_path}/{image_name}"
 
@@ -866,7 +866,7 @@ def save_output(
         return
 
     if vae is None:
-        logger.error("VAE is None, cannot decode latents for saving video/images.")
+        print("VAE is None, cannot decode latents for saving video/images.")
         return
 
     if latent.ndim == 2:  # S,C. For packed latents from other inference scripts
@@ -906,7 +906,7 @@ def preprocess_prompts_for_batch(prompt_lines: List[str], base_args: argparse.Na
 
         # Parse prompt line and create override dictionary
         prompt_data = parse_prompt_line(line)
-        logger.info(f"Parsed prompt data: {prompt_data}")
+        print(f"Parsed prompt data: {prompt_data}")
         prompts_data.append(prompt_data)
 
     return prompts_data
@@ -947,7 +947,7 @@ def process_batch_prompts(prompts_data: List[Dict], args: argparse.Namespace) ->
         args: Base command line arguments
     """
     if not prompts_data:
-        logger.warning("No valid prompts found")
+        print("No valid prompts found")
         return
 
     gen_settings = get_generation_settings(args)
@@ -955,7 +955,7 @@ def process_batch_prompts(prompts_data: List[Dict], args: argparse.Namespace) ->
     device = gen_settings.device
 
     # 1. Prepare VAE
-    logger.info("Loading VAE for batch generation...")
+    print("Loading VAE for batch generation...")
     vae_for_batch = hunyuan_image_vae.load_vae(args.vae, device="cpu", disable_mmap=True, chunk_size=args.vae_chunk_size)
     vae_for_batch.eval()
 
@@ -964,7 +964,7 @@ def process_batch_prompts(prompts_data: List[Dict], args: argparse.Namespace) ->
         check_inputs(prompt_args)  # Validate each prompt's height/width
 
     # 2. Precompute Text Data (Text Encoder)
-    logger.info("Loading Text Encoder for batch text preprocessing...")
+    print("Loading Text Encoder for batch text preprocessing...")
 
     # Text Encoder loaded to CPU by load_text_encoder
     vl_dtype = torch.bfloat16  # Default dtype for Text Encoder
@@ -983,7 +983,7 @@ def process_batch_prompts(prompts_data: List[Dict], args: argparse.Namespace) ->
     all_precomputed_text_data = []
     conds_cache_batch = {}
 
-    logger.info("Preprocessing text and LLM/TextEncoder encoding for all prompts...")
+    print("Preprocessing text and LLM/TextEncoder encoding for all prompts...")
     temp_shared_models_txt = {
         "tokenizer_vlm": tokenizer_vlm,
         "text_encoder_vlm": text_encoder_vlm_batch,  # on GPU if not text_encoder_cpu
@@ -993,7 +993,7 @@ def process_batch_prompts(prompts_data: List[Dict], args: argparse.Namespace) ->
     }
 
     for i, prompt_args_item in enumerate(all_prompt_args_list):
-        logger.info(f"Text preprocessing for prompt {i+1}/{len(all_prompt_args_list)}: {prompt_args_item.prompt}")
+        print(f"Text preprocessing for prompt {i+1}/{len(all_prompt_args_list)}: {prompt_args_item.prompt}")
 
         # prepare_text_inputs will move text_encoders to device temporarily
         context, context_null = prepare_text_inputs(prompt_args_item, device, temp_shared_models_txt)
@@ -1006,25 +1006,25 @@ def process_batch_prompts(prompts_data: List[Dict], args: argparse.Namespace) ->
     clean_memory_on_device(device)
 
     # 3. Load DiT Model once
-    logger.info("Loading DiT model for batch generation...")
+    print("Loading DiT model for batch generation...")
     # Use args from the first prompt for DiT loading (LoRA etc. should be consistent for a batch)
     first_prompt_args = all_prompt_args_list[0]
     dit_model = load_dit_model(first_prompt_args, device, dit_weight_dtype)  # Load directly to target device if possible
 
     if first_prompt_args.save_merged_model:
-        logger.info("Merged DiT model saved. Skipping generation.")
+        print("Merged DiT model saved. Skipping generation.")
 
     shared_models_for_generate = {"model": dit_model}  # Pass DiT via shared_models
 
     all_latents = []
 
-    logger.info("Generating latents for all prompts...")
+    print("Generating latents for all prompts...")
     with torch.no_grad():
         for i, prompt_args_item in enumerate(all_prompt_args_list):
             current_text_data = all_precomputed_text_data[i]
             height, width = check_inputs(prompt_args_item)  # Get height/width for each prompt
 
-            logger.info(f"Generating latent for prompt {i+1}/{len(all_prompt_args_list)}: {prompt_args_item.prompt}")
+            print(f"Generating latent for prompt {i+1}/{len(all_prompt_args_list)}: {prompt_args_item.prompt}")
             try:
                 # generate is called with precomputed data, so it won't load Text Encoders.
                 # It will use the DiT model from shared_models_for_generate.
@@ -1039,14 +1039,14 @@ def process_batch_prompts(prompts_data: List[Dict], args: argparse.Namespace) ->
 
                 all_latents.append(latent)
             except Exception as e:
-                logger.error(f"Error generating latent for prompt: {prompt_args_item.prompt}. Error: {e}", exc_info=True)
+                print(f"Error generating latent for prompt: {prompt_args_item.prompt}. Error: {e}", exc_info=True)
                 all_latents.append(None)  # Add placeholder for failed generations
                 continue
 
     # Free DiT model
-    logger.info("Releasing DiT model from memory...")
+    print("Releasing DiT model from memory...")
     if args.blocks_to_swap > 0:
-        logger.info("Waiting for 5 seconds to finish block swap")
+        print("Waiting for 5 seconds to finish block swap")
         time.sleep(5)
 
     del shared_models_for_generate["model"]
@@ -1056,16 +1056,16 @@ def process_batch_prompts(prompts_data: List[Dict], args: argparse.Namespace) ->
 
     # 4. Decode latents and save outputs (using vae_for_batch)
     if args.output_type != "latent":
-        logger.info("Decoding latents to videos/images using batched VAE...")
+        print("Decoding latents to videos/images using batched VAE...")
         vae_for_batch.to(device)  # Move VAE to device for decoding
 
         for i, latent in enumerate(all_latents):
             if latent is None:  # Skip failed generations
-                logger.warning(f"Skipping decoding for prompt {i+1} due to previous error.")
+                print(f"Skipping decoding for prompt {i+1} due to previous error.")
                 continue
 
             current_args = all_prompt_args_list[i]
-            logger.info(f"Decoding output {i+1}/{len(all_latents)} for prompt: {current_args.prompt}")
+            print(f"Decoding output {i+1}/{len(all_latents)} for prompt: {current_args.prompt}")
 
             # if args.output_type is "latent_images", we already saved latent above.
             # so we skip saving latent here.
@@ -1102,7 +1102,7 @@ def process_interactive(args: argparse.Namespace) -> None:
     try:
         import prompt_toolkit
     except ImportError:
-        logger.warning("prompt_toolkit not found. Using basic input instead.")
+        print("prompt_toolkit not found. Using basic input instead.")
         prompt_toolkit = None
 
     if prompt_toolkit:
@@ -1135,7 +1135,7 @@ def process_interactive(args: argparse.Namespace) -> None:
 
                 # # If not one_frame_inference, move DiT model to CPU after generation
                 # if prompt_args.blocks_to_swap > 0:
-                #     logger.info("Waiting for 5 seconds to finish block swap")
+                #     print("Waiting for 5 seconds to finish block swap")
                 #     time.sleep(5)
                 # model = shared_models.get("model")
                 # model.to("cpu")  # Move DiT model to CPU after generation
@@ -1161,7 +1161,7 @@ def get_generation_settings(args: argparse.Namespace) -> GenerationSettings:
     elif args.fp8:
         dit_weight_dtype = torch.float8_e4m3fn
 
-    logger.info(f"Using device: {device}, DiT weight weight precision: {dit_weight_dtype}")
+    print(f"Using device: {device}, DiT weight weight precision: {dit_weight_dtype}")
 
     gen_settings = GenerationSettings(device=device, dit_weight_dtype=dit_weight_dtype)
     return gen_settings
@@ -1177,7 +1177,7 @@ def main():
     # Set device
     device = args.device if args.device is not None else "cuda" if torch.cuda.is_available() else "cpu"
     device = torch.device(device)
-    logger.info(f"Using device: {device}")
+    print(f"Using device: {device}")
     args.device = device
 
     if latents_mode:
@@ -1200,7 +1200,7 @@ def main():
                     metadata = f.metadata()
                 if metadata is None:
                     metadata = {}
-                logger.info(f"Loaded metadata: {metadata}")
+                print(f"Loaded metadata: {metadata}")
 
                 if "seeds" in metadata:
                     seed = int(metadata["seeds"])
@@ -1210,7 +1210,7 @@ def main():
                     args.image_size = [height, width]
 
             seeds.append(seed)
-            logger.info(f"Loaded latent from {latent_path}. Shape: {latents.shape}")
+            print(f"Loaded latent from {latent_path}. Shape: {latents.shape}")
 
             if latents.ndim == 5:  # [BCTHW]
                 latents = latents.squeeze(0)  # [CTHW]
@@ -1261,7 +1261,7 @@ def main():
         vae.eval()
         save_output(args, vae, latent, device)
 
-    logger.info("Done!")
+    print("Done!")
 
 
 if __name__ == "__main__":

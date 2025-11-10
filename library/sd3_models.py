@@ -1029,7 +1029,7 @@ class MMDiT(nn.Module):
             # # fallback to normal pos_embed
             # return self.cropped_pos_embed(h * p, w * p, device=device, random_crop=random_crop)
             # extend pos_embed size
-            logger.warning(
+            print(
                 f"Add new pos_embed for size {h}x{w} as it exceeds the scaled pos_embed size {pos_embed_size}. Image is too tall or wide."
             )
             patched_size = max(h, w)
@@ -1038,7 +1038,7 @@ class MMDiT(nn.Module):
             pos_embed = get_scaled_2d_sincos_pos_embed(self.hidden_size, grid_size, sample_size=patched_size)
             pos_embed = torch.from_numpy(pos_embed).float().unsqueeze(0)
             self.resolution_pos_embeds[patched_size] = pos_embed
-            logger.info(f"Added pos_embed for size {patched_size}x{patched_size}")
+            print(f"Added pos_embed for size {patched_size}x{patched_size}")
 
             # print(torch.allclose(pos_embed.to(torch.float32).cpu(), self.pos_embed.to(torch.float32).cpu(), atol=5e-2))
             # diff = pos_embed.to(torch.float32).cpu() - self.pos_embed.to(torch.float32).cpu()

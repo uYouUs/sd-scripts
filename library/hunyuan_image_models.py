@@ -457,7 +457,7 @@ def load_hunyuan_image_model(
     model = create_model(attn_mode, split_attn, dit_weight_dtype)
 
     # load model weights with dynamic fp8 optimization and LoRA merging if needed
-    logger.info(f"Loading DiT model from {dit_path}, device={loading_device}")
+    print(f"Loading DiT model from {dit_path}, device={loading_device}")
 
     sd = load_safetensors_with_lora_and_fp8(
         model_files=dit_path,
@@ -476,12 +476,12 @@ def load_hunyuan_image_model(
 
         if loading_device.type != "cpu":
             # make sure all the model weights are on the loading_device
-            logger.info(f"Moving weights to {loading_device}")
+            print(f"Moving weights to {loading_device}")
             for key in sd.keys():
                 sd[key] = sd[key].to(loading_device)
 
     info = model.load_state_dict(sd, strict=True, assign=True)
-    logger.info(f"Loaded DiT model from {dit_path}, info={info}")
+    print(f"Loaded DiT model from {dit_path}, info={info}")
 
     return model
 

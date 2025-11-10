@@ -205,10 +205,10 @@ def load_byt5(
     }
 """
 
-    logger.info(f"Loading BYT5 tokenizer from {BYT5_TOKENIZER_PATH}")
+    print(f"Loading BYT5 tokenizer from {BYT5_TOKENIZER_PATH}")
     byt5_tokenizer = AutoTokenizer.from_pretrained(BYT5_TOKENIZER_PATH)
 
-    logger.info("Initializing BYT5 text encoder")
+    print("Initializing BYT5 text encoder")
     config = json.loads(BYT5_CONFIG_JSON)
     config = T5Config(**config)
     with init_empty_weights():
@@ -219,7 +219,7 @@ def load_byt5(
     if state_dict is not None:
         sd = state_dict
     else:
-        logger.info(f"Loading state dict from {ckpt_path}")
+        print(f"Loading state dict from {ckpt_path}")
         sd = load_safetensors(ckpt_path, device, disable_mmap=disable_mmap, dtype=dtype)
 
     # remove "encoder." prefix
@@ -229,7 +229,7 @@ def load_byt5(
     info = byt5_text_encoder.load_state_dict(sd, strict=True, assign=True)
     byt5_text_encoder.to(device)
     byt5_text_encoder.eval()
-    logger.info(f"BYT5 text encoder loaded with info: {info}")
+    print(f"BYT5 text encoder loaded with info: {info}")
 
     return byt5_tokenizer, byt5_text_encoder
 
@@ -386,7 +386,7 @@ def load_qwen2_5_vl(
     if state_dict is not None:
         sd = state_dict
     else:
-        logger.info(f"Loading state dict from {ckpt_path}")
+        print(f"Loading state dict from {ckpt_path}")
         sd = load_safetensors(ckpt_path, device, disable_mmap=disable_mmap, dtype=dtype)
 
     # convert prefixes
@@ -398,19 +398,19 @@ def load_qwen2_5_vl(
         else:
             continue
         if key not in sd:
-            logger.warning(f"Key {key} not found in state dict, skipping.")
+            print(f"Key {key} not found in state dict, skipping.")
             continue
         sd[new_key] = sd.pop(key)
 
     info = qwen2_5_vl.load_state_dict(sd, strict=True, assign=True)
-    logger.info(f"Loaded Qwen2.5-VL: {info}")
+    print(f"Loaded Qwen2.5-VL: {info}")
     qwen2_5_vl.to(device)
     qwen2_5_vl.eval()
 
     if dtype is not None:
         if dtype.itemsize == 1:  # fp8
             org_dtype = torch.bfloat16  # model weight is fp8 in loading, but original dtype is bfloat16
-            logger.info(f"prepare Qwen2.5-VL for fp8: set to {dtype} from {org_dtype}")
+            print(f"prepare Qwen2.5-VL for fp8: set to {dtype} from {org_dtype}")
             qwen2_5_vl.to(dtype)
 
             # prepare LLM for fp8
@@ -491,11 +491,11 @@ def load_qwen2_5_vl(
             prepare_fp8(qwen2_5_vl, org_dtype)
 
         else:
-            logger.info(f"Setting Qwen2.5-VL to dtype: {dtype}")
+            print(f"Setting Qwen2.5-VL to dtype: {dtype}")
             qwen2_5_vl.to(dtype)
 
     # Load tokenizer
-    logger.info(f"Loading tokenizer from {QWEN_2_5_VL_IMAGE_ID}")
+    print(f"Loading tokenizer from {QWEN_2_5_VL_IMAGE_ID}")
     tokenizer = Qwen2Tokenizer.from_pretrained(QWEN_2_5_VL_IMAGE_ID)
     return tokenizer, qwen2_5_vl
 
@@ -550,7 +550,7 @@ def get_qwen_prompt_embeds_from_tokens(
 
     hidden_states = encoder_hidden_states.hidden_states[-3]  # use the 3rd last layer's hidden states for HunyuanImage-2.1
     if hidden_states.shape[1] > tokenizer_max_length + drop_idx:
-        logger.warning(f"Hidden states shape {hidden_states.shape} exceeds max length {tokenizer_max_length + drop_idx}")
+        print(f"Hidden states shape {hidden_states.shape} exceeds max length {tokenizer_max_length + drop_idx}")
 
     # --- Unnecessary complicated processing, keep for reference ---
     # split_hidden_states = extract_masked_hidden(hidden_states, txt_tokens.attention_mask)
@@ -640,7 +640,7 @@ def get_byt5_text_tokens(tokenizer, prompt):
 
         text_prompt_style_list = [{"color": None, "font-family": None} for _ in range(len(text_prompt_texts))]
         glyph_text_formatted = format_prompt(text_prompt_texts, text_prompt_style_list)
-        logger.info(f"Glyph text formatted: {glyph_text_formatted}")
+        print(f"Glyph text formatted: {glyph_text_formatted}")
 
         byt5_text_inputs = tokenizer(
             glyph_text_formatted,
@@ -657,5 +657,5 @@ def get_byt5_text_tokens(tokenizer, prompt):
         return byt5_text_ids, byt5_text_mask
 
     except Exception as e:
-        logger.warning(f"Warning: Error in glyph encoding, using fallback: {e}")
+        print(f"Warning: Error in glyph encoding, using fallback: {e}")
         return None, None

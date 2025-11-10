@@ -191,7 +191,7 @@ class LuminaTextEncoderOutputsCachingStrategy(TextEncoderOutputsCachingStrategy)
             if "input_ids" not in npz:
                 return False
         except Exception as e:
-            logger.error(f"Error loading file: {npz_path}")
+            print(f"Error loading file: {npz_path}")
             raise e
 
         return True

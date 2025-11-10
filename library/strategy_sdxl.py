@@ -248,7 +248,7 @@ class SdxlTextEncoderOutputsCachingStrategy(TextEncoderOutputsCachingStrategy):
             if "hidden_state1" not in npz or "hidden_state2" not in npz or "pool2" not in npz:
                 return False
         except Exception as e:
-            logger.error(f"Error loading file: {npz_path}")
+            print(f"Error loading file: {npz_path}")
             raise e
 
         return True

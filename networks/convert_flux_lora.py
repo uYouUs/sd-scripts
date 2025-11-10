@@ -235,7 +235,7 @@ def convert_ai_toolkit_to_sd_scripts(ait_sd):
         )
 
     if len(ait_sd) > 0:
-        logger.warning(f"Unsuppored keys for sd-scripts: {ait_sd.keys()}")
+        print(f"Unsuppored keys for sd-scripts: {ait_sd.keys()}")
     return sds_sd
 
 
@@ -303,7 +303,7 @@ def convert_to_ai_toolkit_cat(sds_sd, ait_sd, sds_key, ait_keys, dims=None):
                 is_sparse = is_sparse and torch.all(up_weight[i : i + dims[j], k * ait_rank : (k + 1) * ait_rank] == 0)
             i += dims[j]
         if is_sparse:
-            logger.info(f"weight is sparse: {sds_key}")
+            print(f"weight is sparse: {sds_key}")
 
     # make ai-toolkit weight
     ait_down_keys = [k + ".lora_A.weight" for k in ait_keys]
@@ -394,20 +394,20 @@ def convert_sd_scripts_to_ai_toolkit(sds_sd):
         )
 
     if len(sds_sd) > 0:
-        logger.warning(f"Unsuppored keys for ai-toolkit: {sds_sd.keys()}")
+        print(f"Unsuppored keys for ai-toolkit: {sds_sd.keys()}")
     return ait_sd
 
 
 def main(args):
     # load source safetensors
-    logger.info(f"Loading source file {args.src_path}")
+    print(f"Loading source file {args.src_path}")
     state_dict = {}
     with safe_open(args.src_path, framework="pt") as f:
         metadata = f.metadata()
         for k in f.keys():
             state_dict[k] = f.get_tensor(k)
 
-    logger.info(f"Converting {args.src} to {args.dst} format")
+    print(f"Converting {args.src} to {args.dst} format")
     if args.src == "ai-toolkit" and args.dst == "sd-scripts":
         state_dict = convert_ai_toolkit_to_sd_scripts(state_dict)
     elif args.src == "sd-scripts" and args.dst == "ai-toolkit":
@@ -420,7 +420,7 @@ def main(args):
         raise NotImplementedError(f"Conversion from {args.src} to {args.dst} is not supported")
 
     # save destination safetensors
-    logger.info(f"Saving destination file {args.dst_path}")
+    print(f"Saving destination file {args.dst_path}")
     save_file(state_dict, args.dst_path, metadata=metadata)
 
 

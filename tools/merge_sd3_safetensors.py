@@ -38,7 +38,7 @@ def merge_safetensors(
         device: Device to load tensors to
         save_precision: Target dtype for model weights (e.g. 'fp16', 'bf16')
     """
-    logger.info("Starting to merge safetensors files...")
+    print("Starting to merge safetensors files...")
 
     # Convert save_precision string to torch dtype if specified
     if save_precision:
@@ -52,9 +52,9 @@ def merge_safetensors(
         with safe_open(dit_path, framework="pt") as f:
             metadata = f.metadata()  # may be None
             if metadata:
-                logger.info(f"Found metadata in DiT model: {metadata}")
+                print(f"Found metadata in DiT model: {metadata}")
     except Exception as e:
-        logger.warning(f"Failed to read metadata from DiT model: {e}")
+        print(f"Failed to read metadata from DiT model: {e}")
 
     # 2. Create empty merged state dict
     merged_state_dict = {}
@@ -63,9 +63,9 @@ def merge_safetensors(
 
     # DiT/MMDiT - prefix: model.diffusion_model.
     # This state dict may have VAE keys.
-    logger.info(f"Loading DiT model from {dit_path}")
+    print(f"Loading DiT model from {dit_path}")
     dit_state_dict = load_safetensors(dit_path, device=device, disable_mmap=True, dtype=target_dtype)
-    logger.info(f"Adding DiT model with {len(dit_state_dict)} keys")
+    print(f"Adding DiT model with {len(dit_state_dict)} keys")
     for key, value in dit_state_dict.items():
         if key.startswith("model.diffusion_model.") or key.startswith("first_stage_model."):
             merged_state_dict[key] = value
@@ -78,9 +78,9 @@ def merge_safetensors(
     # VAE - prefix: first_stage_model.
     # May be omitted if VAE is already included in DiT model.
     if vae_path:
-        logger.info(f"Loading VAE model from {vae_path}")
+        print(f"Loading VAE model from {vae_path}")
         vae_state_dict = load_safetensors(vae_path, device=device, disable_mmap=True, dtype=target_dtype)
-        logger.info(f"Adding VAE model with {len(vae_state_dict)} keys")
+        print(f"Adding VAE model with {len(vae_state_dict)} keys")
         for key, value in vae_state_dict.items():
             if key.startswith("first_stage_model."):
                 merged_state_dict[key] = value
@@ -92,9 +92,9 @@ def merge_safetensors(
 
     # CLIP-L - prefix: text_encoders.clip_l.
     if clip_l_path:
-        logger.info(f"Loading CLIP-L model from {clip_l_path}")
+        print(f"Loading CLIP-L model from {clip_l_path}")
         clip_l_state_dict = load_safetensors(clip_l_path, device=device, disable_mmap=True, dtype=target_dtype)
-        logger.info(f"Adding CLIP-L model with {len(clip_l_state_dict)} keys")
+        print(f"Adding CLIP-L model with {len(clip_l_state_dict)} keys")
         for key, value in clip_l_state_dict.items():
             if key.startswith("text_encoders.clip_l.transformer."):
                 merged_state_dict[key] = value
@@ -106,9 +106,9 @@ def merge_safetensors(
 
     # CLIP-G - prefix: text_encoders.clip_g.
     if clip_g_path:
-        logger.info(f"Loading CLIP-G model from {clip_g_path}")
+        print(f"Loading CLIP-G model from {clip_g_path}")
         clip_g_state_dict = load_safetensors(clip_g_path, device=device, disable_mmap=True, dtype=target_dtype)
-        logger.info(f"Adding CLIP-G model with {len(clip_g_state_dict)} keys")
+        print(f"Adding CLIP-G model with {len(clip_g_state_dict)} keys")
         for key, value in clip_g_state_dict.items():
             if key.startswith("text_encoders.clip_g.transformer."):
                 merged_state_dict[key] = value
@@ -120,9 +120,9 @@ def merge_safetensors(
 
     # T5-XXL - prefix: text_encoders.t5xxl.
     if t5xxl_path:
-        logger.info(f"Loading T5-XXL model from {t5xxl_path}")
+        print(f"Loading T5-XXL model from {t5xxl_path}")
         t5xxl_state_dict = load_safetensors(t5xxl_path, device=device, disable_mmap=True, dtype=target_dtype)
-        logger.info(f"Adding T5-XXL model with {len(t5xxl_state_dict)} keys")
+        print(f"Adding T5-XXL model with {len(t5xxl_state_dict)} keys")
         for key, value in t5xxl_state_dict.items():
             if key.startswith("text_encoders.t5xxl.transformer."):
                 merged_state_dict[key] = value
@@ -133,9 +133,9 @@ def merge_safetensors(
         gc.collect()
 
     # 4. Save merged state dict
-    logger.info(f"Saving merged model to {output_path} with {len(merged_state_dict)} keys total")
+    print(f"Saving merged model to {output_path} with {len(merged_state_dict)} keys total")
     mem_eff_save_file(merged_state_dict, output_path, metadata)
-    logger.info("Successfully merged safetensors files")
+    print("Successfully merged safetensors files")
 
 
 def main():

@@ -50,7 +50,7 @@ def convert(args):
         os.makedirs(flux_path.parent)
 
     if not diffusers_path.exists():
-        logger.error(f"Error: Missing transformer safetensors file: {diffusers_path}")
+        print(f"Error: Missing transformer safetensors file: {diffusers_path}")
         return
 
     mem_eff_flag = args.mem_eff_load_save
@@ -64,7 +64,7 @@ def convert(args):
     for i in range(3):
         # replace 00001 with 0000i
         current_diffusers_path = Path(str(diffusers_path).replace("00001", f"0000{i+1}"))
-        logger.info(f"Loading diffusers file: {current_diffusers_path}")
+        print(f"Loading diffusers file: {current_diffusers_path}")
 
         open_func = MemoryEfficientSafeOpen if mem_eff_flag else (lambda x: safe_open(x, framework="pt"))
         with open_func(current_diffusers_path) as f:
@@ -79,7 +79,7 @@ def convert(args):
                         flux_sd[bfl_key] = []
                     flux_sd[bfl_key].append((index, tensor))
                 else:
-                    logger.error(f"Error: Key not found in diffusers_to_bfl_map: {diffusers_key}")
+                    print(f"Error: Key not found in diffusers_to_bfl_map: {diffusers_key}")
                     return
 
     # concat tensors if multiple tensors are mapped to a single key, sort by index
@@ -101,13 +101,13 @@ def convert(args):
         flux_sd["final_layer.adaLN_modulation.1.bias"] = swap_scale_shift(flux_sd["final_layer.adaLN_modulation.1.bias"])
 
     # save flux_sd to safetensors file
-    logger.info(f"Saving Flux safetensors file: {flux_path}")
+    print(f"Saving Flux safetensors file: {flux_path}")
     if mem_eff_flag:
         mem_eff_save_file(flux_sd, flux_path)
     else:
         safetensors.torch.save_file(flux_sd, flux_path)
 
-    logger.info("Conversion completed.")
+    print("Conversion completed.")
 
 
 def setup_parser():

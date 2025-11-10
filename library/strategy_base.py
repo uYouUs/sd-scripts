@@ -58,14 +58,14 @@ class TokenizeStrategy:
         if tokenizer_cache_dir:
             local_tokenizer_path = os.path.join(tokenizer_cache_dir, model_id.replace("/", "_"))
             if os.path.exists(local_tokenizer_path):
-                logger.info(f"load tokenizer from cache: {local_tokenizer_path}")
+                print(f"load tokenizer from cache: {local_tokenizer_path}")
                 tokenizer = model_class.from_pretrained(local_tokenizer_path)  # same for v1 and v2
 
         if tokenizer is None:
             tokenizer = model_class.from_pretrained(model_id, subfolder=subfolder)
 
         if tokenizer_cache_dir and not os.path.exists(local_tokenizer_path):
-            logger.info(f"save Tokenizer to cache: {local_tokenizer_path}")
+            print(f"save Tokenizer to cache: {local_tokenizer_path}")
             tokenizer.save_pretrained(local_tokenizer_path)
 
         return tokenizer
@@ -198,7 +198,7 @@ class TokenizeStrategy:
                 tokens = tokens[:max_length]
                 weights = weights[:max_length]
             if truncated:
-                logger.warning("Prompt was truncated. Try to shorten the prompt or increase max_embeddings_multiples")
+                print("Prompt was truncated. Try to shorten the prompt or increase max_embeddings_multiples")
             return tokens, weights
 
         def pad_tokens_and_weights(tokens, weights, max_length, bos, eos, pad):
@@ -466,7 +466,7 @@ class LatentsCachingStrategy:
             if apply_alpha_mask and "alpha_mask" + key_reso_suffix not in npz:
                 return False
         except Exception as e:
-            logger.error(f"Error loading file: {npz_path}")
+            print(f"Error loading file: {npz_path}")
             raise e
 
         return True

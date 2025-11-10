@@ -40,7 +40,7 @@ class Sd3NetworkTrainer(train_network.NetworkTrainer):
             args.fp8_base = True  # if fp8_base_unet is enabled, fp8_base is also enabled for SD3
 
         if args.cache_text_encoder_outputs_to_disk and not args.cache_text_encoder_outputs:
-            logger.warning(
+            print(
                 "cache_text_encoder_outputs_to_disk is enabled, so cache_text_encoder_outputs is also enabled / cache_text_encoder_outputs_to_diskが有効になっているため、cache_text_encoder_outputsも有効になります"
             )
             args.cache_text_encoder_outputs = True
@@ -55,7 +55,7 @@ class Sd3NetworkTrainer(train_network.NetworkTrainer):
         self.train_t5xxl = False  # default is False even if args.network_train_unet_only is False
 
         if args.max_token_length is not None:
-            logger.warning("max_token_length is not used in Flux training / max_token_lengthはFluxのトレーニングでは使用されません")
+            print("max_token_length is not used in Flux training / max_token_lengthはFluxのトレーニングでは使用されません")
 
         assert (
             args.blocks_to_swap is None or args.blocks_to_swap == 0
@@ -89,7 +89,7 @@ class Sd3NetworkTrainer(train_network.NetworkTrainer):
         if args.enable_scaled_pos_embed:
             latent_sizes = [round(math.sqrt(res[0] * res[1])) // 8 for res in self.resolutions]  # 8 is stride for latent
             latent_sizes = list(set(latent_sizes))  # remove duplicates
-            logger.info(f"Prepare scaled positional embeddings for resolutions: {self.resolutions}, sizes: {latent_sizes}")
+            print(f"Prepare scaled positional embeddings for resolutions: {self.resolutions}, sizes: {latent_sizes}")
             mmdit.enable_scaled_pos_embed(True, latent_sizes)
 
         if args.fp8_base:
@@ -97,9 +97,9 @@ class Sd3NetworkTrainer(train_network.NetworkTrainer):
             if mmdit.dtype == torch.float8_e4m3fnuz or mmdit.dtype == torch.float8_e5m2 or mmdit.dtype == torch.float8_e5m2fnuz:
                 raise ValueError(f"Unsupported fp8 model dtype: {mmdit.dtype}")
             elif mmdit.dtype == torch.float8_e4m3fn:
-                logger.info("Loaded fp8 SD3 model")
+                print("Loaded fp8 SD3 model")
             else:
-                logger.info(
+                print(
                     "Cast SD3 model to fp8. This may take a while. You can reduce the time by using fp8 checkpoint."
                     " / SD3モデルをfp8に変換しています。これには時間がかかる場合があります。fp8チェックポイントを使用することで時間を短縮できます。"
                 )
@@ -107,7 +107,7 @@ class Sd3NetworkTrainer(train_network.NetworkTrainer):
         self.is_swapping_blocks = args.blocks_to_swap is not None and args.blocks_to_swap > 0
         if self.is_swapping_blocks:
             # Swap blocks between CPU and GPU to reduce memory usage, in forward and backward passes.
-            logger.info(f"enable block swap: blocks_to_swap={args.blocks_to_swap}")
+            print(f"enable block swap: blocks_to_swap={args.blocks_to_swap}")
             mmdit.enable_block_swap(args.blocks_to_swap, accelerator.device)
 
         clip_l = sd3_utils.load_clip_l(
@@ -135,7 +135,7 @@ class Sd3NetworkTrainer(train_network.NetworkTrainer):
             if t5xxl.dtype == torch.float8_e4m3fnuz or t5xxl.dtype == torch.float8_e5m2 or t5xxl.dtype == torch.float8_e5m2fnuz:
                 raise ValueError(f"Unsupported fp8 model dtype: {t5xxl.dtype}")
             elif t5xxl.dtype == torch.float8_e4m3fn:
-                logger.info("Loaded fp8 T5XXL model")
+                print("Loaded fp8 T5XXL model")
 
         vae = sd3_utils.load_vae(
             args.vae, weight_dtype, "cpu", disable_mmap=args.disable_mmap_load_safetensors, state_dict=state_dict
@@ -144,7 +144,7 @@ class Sd3NetworkTrainer(train_network.NetworkTrainer):
         return mmdit.model_type, [clip_l, clip_g, t5xxl], vae, mmdit
 
     def get_tokenize_strategy(self, args):
-        logger.info(f"t5xxl_max_token_length: {args.t5xxl_max_token_length}")
+        print(f"t5xxl_max_token_length: {args.t5xxl_max_token_length}")
         return strategy_sd3.Sd3TokenizeStrategy(args.t5xxl_max_token_length, args.tokenizer_cache_dir)
 
     def get_tokenizers(self, tokenize_strategy: strategy_sd3.Sd3TokenizeStrategy):
@@ -206,7 +206,7 @@ class Sd3NetworkTrainer(train_network.NetworkTrainer):
         if args.cache_text_encoder_outputs:
             if not args.lowram:
                 # メモリ消費を減らす
-                logger.info("move vae and unet to cpu to save memory")
+                print("move vae and unet to cpu to save memory")
                 org_vae_device = vae.device
                 org_unet_device = unet.device
                 vae.to("cpu")
@@ -214,7 +214,7 @@ class Sd3NetworkTrainer(train_network.NetworkTrainer):
                 clean_memory_on_device(accelerator.device)
 
             # When TE is not be trained, it will not be prepared so we need to use explicit autocast
-            logger.info("move text encoders to gpu")
+            print("move text encoders to gpu")
             text_encoders[0].to(accelerator.device, dtype=weight_dtype)  # always not fp8
             text_encoders[1].to(accelerator.device, dtype=weight_dtype)  # always not fp8
             text_encoders[2].to(accelerator.device)  # may be fp8
@@ -231,7 +231,7 @@ class Sd3NetworkTrainer(train_network.NetworkTrainer):
 
             # cache sample prompts
             if args.sample_prompts is not None:
-                logger.info(f"cache Text Encoder outputs for sample prompt: {args.sample_prompts}")
+                print(f"cache Text Encoder outputs for sample prompt: {args.sample_prompts}")
 
                 tokenize_strategy: strategy_sd3.Sd3TokenizeStrategy = strategy_base.TokenizeStrategy.get_strategy()
                 text_encoding_strategy: strategy_sd3.Sd3TextEncodingStrategy = strategy_base.TextEncodingStrategy.get_strategy()
@@ -242,7 +242,7 @@ class Sd3NetworkTrainer(train_network.NetworkTrainer):
                     for prompt_dict in prompts:
                         for p in [prompt_dict.get("prompt", ""), prompt_dict.get("negative_prompt", "")]:
                             if p not in sample_prompts_te_outputs:
-                                logger.info(f"cache Text Encoder outputs for prompt: {p}")
+                                print(f"cache Text Encoder outputs for prompt: {p}")
                                 tokens_and_masks = tokenize_strategy.tokenize(p)
                                 sample_prompts_te_outputs[p] = text_encoding_strategy.encode_tokens(
                                     tokenize_strategy,
@@ -257,16 +257,16 @@ class Sd3NetworkTrainer(train_network.NetworkTrainer):
 
             # move back to cpu
             if not self.is_train_text_encoder(args):
-                logger.info("move CLIP-L back to cpu")
+                print("move CLIP-L back to cpu")
                 text_encoders[0].to("cpu")
-                logger.info("move CLIP-G back to cpu")
+                print("move CLIP-G back to cpu")
                 text_encoders[1].to("cpu")
-            logger.info("move t5XXL back to cpu")
+            print("move t5XXL back to cpu")
             text_encoders[2].to("cpu")
             clean_memory_on_device(accelerator.device)
 
             if not args.lowram:
-                logger.info("move vae and unet back to original device")
+                print("move vae and unet back to original device")
                 vae.to(org_vae_device)
                 unet.to(org_unet_device)
         else:
@@ -418,7 +418,7 @@ class Sd3NetworkTrainer(train_network.NetworkTrainer):
     def prepare_text_encoder_fp8(self, index, text_encoder, te_weight_dtype, weight_dtype):
         if index == 0 or index == 1:  # CLIP-L/CLIP-G
             clip_type = "CLIP-L" if index == 0 else "CLIP-G"
-            logger.info(f"prepare CLIP-{clip_type} for fp8: set to {te_weight_dtype}, set embeddings to {weight_dtype}")
+            print(f"prepare CLIP-{clip_type} for fp8: set to {te_weight_dtype}, set embeddings to {weight_dtype}")
             text_encoder.to(te_weight_dtype)  # fp8
             text_encoder.text_model.embeddings.to(dtype=weight_dtype)
         else:  # T5XXL
@@ -445,9 +445,9 @@ class Sd3NetworkTrainer(train_network.NetworkTrainer):
                         module.forward = forward_hook(module)
 
             if flux_utils.get_t5xxl_actual_dtype(text_encoder) == torch.float8_e4m3fn and text_encoder.dtype == weight_dtype:
-                logger.info(f"T5XXL already prepared for fp8")
+                print(f"T5XXL already prepared for fp8")
             else:
-                logger.info(f"prepare T5XXL for fp8: set to {te_weight_dtype}, set embeddings to {weight_dtype}, add hooks")
+                print(f"prepare T5XXL for fp8: set to {te_weight_dtype}, set embeddings to {weight_dtype}, add hooks")
                 text_encoder.to(te_weight_dtype)  # fp8
                 prepare_fp8(text_encoder, weight_dtype)
 

@@ -78,13 +78,13 @@ def train(args):
     #     not args.weighted_captions
     # ), "weighted_captions is not supported currently / weighted_captionsは現在サポートされていません"
     if args.cache_text_encoder_outputs_to_disk and not args.cache_text_encoder_outputs:
-        logger.warning(
+        print(
             "cache_text_encoder_outputs_to_disk is enabled, so cache_text_encoder_outputs is also enabled / cache_text_encoder_outputs_to_diskが有効になっているため、cache_text_encoder_outputsも有効になります"
         )
         args.cache_text_encoder_outputs = True
 
     if args.cpu_offload_checkpointing and not args.gradient_checkpointing:
-        logger.warning(
+        print(
             "cpu_offload_checkpointing is enabled, so gradient_checkpointing is also enabled / cpu_offload_checkpointingが有効になっているため、gradient_checkpointingも有効になります"
         )
         args.gradient_checkpointing = True
@@ -111,11 +111,11 @@ def train(args):
     if args.dataset_class is None:
         blueprint_generator = BlueprintGenerator(ConfigSanitizer(False, False, True, True))
         if args.dataset_config is not None:
-            logger.info(f"Load dataset config from {args.dataset_config}")
+            print(f"Load dataset config from {args.dataset_config}")
             user_config = config_util.load_user_config(args.dataset_config)
             ignored = ["train_data_dir", "conditioning_data_dir"]
             if any(getattr(args, attr) is not None for attr in ignored):
-                logger.warning(
+                print(
                     "ignore following options because config file is found: {0} / 設定ファイルが利用されるため以下のオプションは無視されます: {0}".format(
                         ", ".join(ignored)
                     )
@@ -161,7 +161,7 @@ def train(args):
         train_util.debug_dataset(train_dataset_group, True)
         return
     if len(train_dataset_group) == 0:
-        logger.error(
+        print(
             "No data found. Please verify the metadata file and train_data_dir option. / 画像がありません。メタデータおよびtrain_data_dirオプションを確認してください。"
         )
         return
@@ -177,7 +177,7 @@ def train(args):
         ), "when caching text encoder output, either caption_dropout_rate, shuffle_caption, token_warmup_step or caption_tag_dropout_rate cannot be used / text encoderの出力をキャッシュするときはcaption_dropout_rate, shuffle_caption, token_warmup_step, caption_tag_dropout_rateは使えません"
 
     # acceleratorを準備する
-    logger.info("prepare accelerator")
+    print("prepare accelerator")
     accelerator = train_util.prepare_accelerator(args)
 
     # mixed precisionに対応した型を用意しておき適宜castする
@@ -240,7 +240,7 @@ def train(args):
 
         # cache sample prompt's embeddings to free text encoder's memory
         if args.sample_prompts is not None:
-            logger.info(f"cache Text Encoder outputs for sample prompt: {args.sample_prompts}")
+            print(f"cache Text Encoder outputs for sample prompt: {args.sample_prompts}")
 
             text_encoding_strategy: strategy_flux.FluxTextEncodingStrategy = strategy_base.TextEncodingStrategy.get_strategy()
 
@@ -250,7 +250,7 @@ def train(args):
                 for prompt_dict in prompts:
                     for p in [prompt_dict.get("prompt", ""), prompt_dict.get("negative_prompt", "")]:
                         if p not in sample_prompts_te_outputs:
-                            logger.info(f"cache Text Encoder outputs for prompt: {p}")
+                            print(f"cache Text Encoder outputs for prompt: {p}")
                             tokens_and_masks = flux_tokenize_strategy.tokenize(p)
                             sample_prompts_te_outputs[p] = text_encoding_strategy.encode_tokens(
                                 flux_tokenize_strategy, [clip_l, t5xxl], tokens_and_masks, args.apply_t5_attn_mask
@@ -289,11 +289,11 @@ def train(args):
         if args.single_blocks_to_swap is not None:
             blocks_to_swap += args.single_blocks_to_swap // 2
         if blocks_to_swap > 0:
-            logger.warning(
+            print(
                 "double_blocks_to_swap and single_blocks_to_swap are deprecated. Use blocks_to_swap instead."
                 " / double_blocks_to_swapとsingle_blocks_to_swapは非推奨です。blocks_to_swapを使ってください。"
             )
-            logger.info(
+            print(
                 f"double_blocks_to_swap={args.double_blocks_to_swap} and single_blocks_to_swap={args.single_blocks_to_swap} are converted to blocks_to_swap={blocks_to_swap}."
             )
             args.blocks_to_swap = blocks_to_swap
@@ -303,7 +303,7 @@ def train(args):
     if is_swapping_blocks:
         # Swap blocks between CPU and GPU to reduce memory usage, in forward and backward passes.
         # This idea is based on 2kpr's great work. Thank you!
-        logger.info(f"enable block swap: blocks_to_swap={args.blocks_to_swap}")
+        print(f"enable block swap: blocks_to_swap={args.blocks_to_swap}")
         flux.enable_block_swap(args.blocks_to_swap, accelerator.device)
         flux.move_to_device_except_swap_blocks(accelerator.device)  # reduce peak memory usage
         # ControlNet only has two blocks, so we can keep it on GPU
@@ -382,7 +382,7 @@ def train(args):
             optimizers.append(optimizer)
         optimizer = optimizers[0]  # avoid error in the following code
 
-        logger.info(f"using {len(optimizers)} optimizers for blockwise fused optimizers")
+        print(f"using {len(optimizers)} optimizers for blockwise fused optimizers")
 
         if train_util.is_schedulefree_optimizer(optimizers[0], args):
             raise ValueError("Schedule-free optimizer is not supported with blockwise fused optimizers")
@@ -813,7 +813,7 @@ def train(args):
 
     if is_main_process:
         flux_train_utils.save_flux_model_on_train_end(args, save_dtype, epoch, global_step, controlnet)
-        logger.info("model saved.")
+        print("model saved.")
 
 
 def setup_parser() -> argparse.ArgumentParser:

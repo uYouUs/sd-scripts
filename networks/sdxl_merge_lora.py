@@ -60,7 +60,7 @@ def merge_to_sd_model(text_encoder1, text_encoder2, unet, models, ratios, lbws, 
 
     # detect the method: OFT or LoRA_module
     method = detect_method_from_training_model(models, merge_dtype)
-    logger.info(f"method:{method}")
+    print(f"method:{method}")
 
     if lbws:
         lbws, _, LBW_TARGET_IDX = format_lbws(lbws)
@@ -98,16 +98,16 @@ def merge_to_sd_model(text_encoder1, text_encoder2, unet, models, ratios, lbws, 
                         name_to_module[lora_name] = child_module
 
     for model, ratio, lbw in itertools.zip_longest(models, ratios, lbws):
-        logger.info(f"loading: {model}")
+        print(f"loading: {model}")
         lora_sd, _ = load_state_dict(model, merge_dtype)
 
-        logger.info(f"merging...")
+        print(f"merging...")
 
         if lbw:
             lbw_weights = [1] * 26
             for index, value in zip(LBW_TARGET_IDX, lbw):
                 lbw_weights[index] = value
-            logger.info(f"lbw: {dict(zip(LAYER26.keys(), lbw_weights))}")
+            print(f"lbw: {dict(zip(LAYER26.keys(), lbw_weights))}")
 
         if method == "LoRA":
             for key in tqdm(lora_sd.keys()):
@@ -118,10 +118,10 @@ def merge_to_sd_model(text_encoder1, text_encoder2, unet, models, ratios, lbws, 
                     # find original module for this lora
                     module_name = ".".join(key.split(".")[:-2])  # remove trailing ".lora_down.weight"
                     if module_name not in name_to_module:
-                        logger.info(f"no module found for LoRA weight: {key}")
+                        print(f"no module found for LoRA weight: {key}")
                         continue
                     module = name_to_module[module_name]
-                    # logger.info(f"apply {key} to {module}")
+                    # print(f"apply {key} to {module}")
 
                     down_weight = lora_sd[key]
                     up_weight = lora_sd[up_key]
@@ -138,7 +138,7 @@ def merge_to_sd_model(text_encoder1, text_encoder2, unet, models, ratios, lbws, 
 
                     # W <- W + U * D
                     weight = module.weight
-                    # logger.info(module_name, down_weight.size(), up_weight.size())
+                    # print(module_name, down_weight.size(), up_weight.size())
                     if len(weight.size()) == 2:
                         # linear
                         weight = weight + ratio * (up_weight @ down_weight) * scale
@@ -153,7 +153,7 @@ def merge_to_sd_model(text_encoder1, text_encoder2, unet, models, ratios, lbws, 
                     else:
                         # conv2d 3x3
                         conved = torch.nn.functional.conv2d(down_weight.permute(1, 0, 2, 3), up_weight).permute(1, 0, 2, 3)
-                        # logger.info(conved.size(), weight.size(), module.stride, module.padding)
+                        # print(conved.size(), weight.size(), module.stride, module.padding)
                         weight = weight + ratio * conved * scale
 
                     module.weight = torch.nn.Parameter(weight)
@@ -180,11 +180,11 @@ def merge_to_sd_model(text_encoder1, text_encoder2, unet, models, ratios, lbws, 
                 # find original module for this OFT
                 module_name = ".".join(key.split(".")[:-1])
                 if module_name not in name_to_module:
-                    logger.info(f"no module found for OFT weight: {key}")
+                    print(f"no module found for OFT weight: {key}")
                     return
                 module = name_to_module[module_name]
 
-                # logger.info(f"apply {key} to {module}")
+                # print(f"apply {key} to {module}")
 
                 oft_blocks = lora_sd[key]
 
@@ -254,14 +254,14 @@ def merge_lora_models(models, ratios, lbws, merge_dtype, concat=False, shuffle=F
     v2 = None
     base_model = None
     for model, ratio, lbw in itertools.zip_longest(models, ratios, lbws):
-        logger.info(f"loading: {model}")
+        print(f"loading: {model}")
         lora_sd, lora_metadata = load_state_dict(model, merge_dtype)
 
         if lbw:
             lbw_weights = [1] * 26
             for index, value in zip(LBW_TARGET_IDX, lbw):
                 lbw_weights[index] = value
-            logger.info(f"lbw: {dict(zip(LAYER26.keys(), lbw_weights))}")
+            print(f"lbw: {dict(zip(LAYER26.keys(), lbw_weights))}")
 
         if lora_metadata is not None:
             if v2 is None:
@@ -293,10 +293,10 @@ def merge_lora_models(models, ratios, lbws, merge_dtype, concat=False, shuffle=F
                 if lora_module_name not in base_alphas:
                     base_alphas[lora_module_name] = alpha
 
-        logger.info(f"dim: {list(set(dims.values()))}, alpha: {list(set(alphas.values()))}")
+        print(f"dim: {list(set(dims.values()))}, alpha: {list(set(alphas.values()))}")
 
         # merge
-        logger.info(f"merging...")
+        print(f"merging...")
         for key in tqdm(lora_sd.keys()):
             if "alpha" in key:
                 continue
@@ -345,8 +345,8 @@ def merge_lora_models(models, ratios, lbws, merge_dtype, concat=False, shuffle=F
             merged_sd[key_down] = merged_sd[key_down][perm]
             merged_sd[key_up] = merged_sd[key_up][:, perm]
 
-    logger.info("merged model")
-    logger.info(f"dim: {list(set(base_dims.values()))}, alpha: {list(set(base_alphas.values()))}")
+    print("merged model")
+    print(f"dim: {list(set(base_dims.values()))}, alpha: {list(set(base_alphas.values()))}")
 
     # check all dims are same
     dims_list = list(set(base_dims.values()))
@@ -396,7 +396,7 @@ def merge(args):
         save_dtype = merge_dtype
 
     if args.sd_model is not None:
-        logger.info(f"loading SD model: {args.sd_model}")
+        print(f"loading SD model: {args.sd_model}")
 
         (
             text_model1,
@@ -418,7 +418,7 @@ def merge(args):
                 None, False, False, True, False, False, time.time(), title=title, merged_from=merged_from
             )
 
-        logger.info(f"saving SD model to: {args.save_to}")
+        print(f"saving SD model to: {args.save_to}")
         sdxl_model_util.save_stable_diffusion_checkpoint(
             args.save_to, text_model1, text_model2, unet, 0, 0, ckpt_info, vae, logit_scale, sai_metadata, save_dtype
         )
@@ -431,7 +431,7 @@ def merge(args):
             if type(value) == torch.Tensor and value.dtype.is_floating_point and value.dtype != save_dtype:
                 state_dict[key] = value.to(save_dtype)
 
-        logger.info(f"calculating hashes and creating metadata...")
+        print(f"calculating hashes and creating metadata...")
 
         model_hash, legacy_hash = train_util.precalculate_safetensors_hashes(state_dict, metadata)
         metadata["sshs_model_hash"] = model_hash
@@ -445,7 +445,7 @@ def merge(args):
             )
             metadata.update(sai_metadata)
 
-        logger.info(f"saving model to: {args.save_to}")
+        print(f"saving model to: {args.save_to}")
         save_to_file(args.save_to, state_dict, metadata)
 
 

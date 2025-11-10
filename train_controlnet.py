@@ -10,7 +10,7 @@ from library import train_util
 from train_control_net import setup_parser, train
 
 if __name__ == "__main__":
-    logger.warning(
+    print(
         "The module 'train_controlnet.py' is deprecated. Please use 'train_control_net.py' instead"
         " / 'train_controlnet.py'は非推奨です。代わりに'train_control_net.py'を使用してください。"
     )

@@ -290,7 +290,7 @@ def load_safetensors(
     if disable_mmap:
         # return safetensors.torch.load(open(path, "rb").read())
         # use experimental loader
-        # logger.info(f"Loading without mmap (experimental)")
+        # print(f"Loading without mmap (experimental)")
         state_dict = {}
         device = torch.device(device) if device is not None else None
         with MemoryEfficientSafeOpen(path) as f:

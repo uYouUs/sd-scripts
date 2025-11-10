@@ -205,7 +205,7 @@ class TextualInversionTrainer:
         strategy_base.LatentsCachingStrategy.set_strategy(latents_caching_strategy)
 
         # acceleratorを準備する
-        logger.info("prepare accelerator")
+        print("prepare accelerator")
         accelerator = train_util.prepare_accelerator(args)
 
         # mixed precisionに対応した型を用意しておき適宜castする
@@ -308,7 +308,7 @@ class TextualInversionTrainer:
                         ]
                     }
                 else:
-                    logger.info("Train with captions.")
+                    print("Train with captions.")
                     user_config = {
                         "datasets": [
                             {
@@ -763,7 +763,7 @@ class TextualInversionTrainer:
             ckpt_name = train_util.get_last_ckpt_name(args, "." + args.save_model_as)
             save_model(ckpt_name, updated_embs_list, global_step, num_train_epochs, force_sync_upload=True)
 
-            logger.info("model saved.")
+            print("model saved.")
 
 
 def setup_parser() -> argparse.ArgumentParser:
