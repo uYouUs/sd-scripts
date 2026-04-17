@@ -245,23 +245,23 @@ def add_sd3_training_arguments(parser: argparse.ArgumentParser):
 def verify_sdxl_training_args(args: argparse.Namespace, supportTextEncoderCaching: bool = True):
     assert not args.v2, "v2 cannot be enabled in SDXL training / SDXL学習ではv2を有効にすることはできません"
     if args.v_parameterization:
-        logger.warning("v_parameterization will be unexpected / SDXL学習ではv_parameterizationは想定外の動作になります")
+        print("v_parameterization will be unexpected / SDXL学習ではv_parameterizationは想定外の動作になります")
 
     if args.clip_skip is not None:
-        logger.warning("clip_skip will be unexpected / SDXL学習ではclip_skipは動作しません")
+        print("clip_skip will be unexpected / SDXL学習ではclip_skipは動作しません")
 
     # if args.multires_noise_iterations:
-    #     logger.info(
+    #     print(
     #         f"Warning: SDXL has been trained with noise_offset={DEFAULT_NOISE_OFFSET}, but noise_offset is disabled due to multires_noise_iterations / SDXLはnoise_offset={DEFAULT_NOISE_OFFSET}で学習されていますが、multires_noise_iterationsが有効になっているためnoise_offsetは無効になります"
     #     )
     # else:
     #     if args.noise_offset is None:
     #         args.noise_offset = DEFAULT_NOISE_OFFSET
     #     elif args.noise_offset != DEFAULT_NOISE_OFFSET:
-    #         logger.info(
+    #         print(
     #             f"Warning: SDXL has been trained with noise_offset={DEFAULT_NOISE_OFFSET} / SDXLはnoise_offset={DEFAULT_NOISE_OFFSET}で学習されています"
     #         )
-    #     logger.info(f"noise_offset is set to {args.noise_offset} / noise_offsetが{args.noise_offset}に設定されました")
+    #     print(f"noise_offset is set to {args.noise_offset} / noise_offsetが{args.noise_offset}に設定されました")
 
     assert (
         not hasattr(args, "weighted_captions") or not args.weighted_captions
@@ -270,7 +270,7 @@ def verify_sdxl_training_args(args: argparse.Namespace, supportTextEncoderCachin
     if supportTextEncoderCaching:
         if args.cache_text_encoder_outputs_to_disk and not args.cache_text_encoder_outputs:
             args.cache_text_encoder_outputs = True
-            logger.warning(
+            print(
                 "cache_text_encoder_outputs is enabled because cache_text_encoder_outputs_to_disk is enabled / "
                 + "cache_text_encoder_outputs_to_diskが有効になっているためcache_text_encoder_outputsが有効になりました"
             )
@@ -396,10 +396,10 @@ def sample_images(
             if steps % args.sample_every_n_steps != 0 or epoch is not None:  # steps is not divisible or end of epoch
                 return
 
-    logger.info("")
-    logger.info(f"generating sample images at step / サンプル画像生成 ステップ: {steps}")
+    print("")
+    print(f"generating sample images at step / サンプル画像生成 ステップ: {steps}")
     if not os.path.isfile(args.sample_prompts) and sample_prompts_te_outputs is None:
-        logger.error(f"No prompt file / プロンプトファイルがありません: {args.sample_prompts}")
+        print(f"No prompt file / プロンプトファイルがありません: {args.sample_prompts}")
         return
 
     distributed_state = PartialState()  # for multi gpu distributed inference. this is a singleton, so it's safe to use it here
@@ -512,15 +512,15 @@ def sample_image_inference(
 
     height = max(64, height - height % 8)  # round to divisible by 8
     width = max(64, width - width % 8)  # round to divisible by 8
-    logger.info(f"prompt: {prompt}")
-    logger.info(f"negative_prompt: {negative_prompt}")
-    logger.info(f"height: {height}")
-    logger.info(f"width: {width}")
-    logger.info(f"sample_steps: {sample_steps}")
-    logger.info(f"scale: {scale}")
-    # logger.info(f"sample_sampler: {sampler_name}")
+    print(f"prompt: {prompt}")
+    print(f"negative_prompt: {negative_prompt}")
+    print(f"height: {height}")
+    print(f"width: {width}")
+    print(f"sample_steps: {sample_steps}")
+    print(f"scale: {scale}")
+    # print(f"sample_sampler: {sampler_name}")
     if seed is not None:
-        logger.info(f"seed: {seed}")
+        print(f"seed: {seed}")
 
     # encode prompts
     tokenize_strategy = strategy_base.TokenizeStrategy.get_strategy()

@@ -113,7 +113,7 @@ def main():
     weight_dtype, save_dtype = train_util.prepare_dtype(args)
 
     prompt_settings = load_prompt_settings(args.prompts_file)
-    logger.info(f"loaded {len(prompt_settings)} LECO prompt settings from {args.prompts_file}")
+    print(f"loaded {len(prompt_settings)} LECO prompt settings from {args.prompts_file}")
 
     text_encoder, vae, unet, _ = train_util.load_target_model(args, weight_dtype, accelerator)
     del vae
@@ -179,7 +179,7 @@ def main():
 
     if args.network_weights is not None:
         info = network.load_weights(args.network_weights)
-        logger.info(f"loaded network weights from {args.network_weights}: {info}")
+        print(f"loaded network weights from {args.network_weights}: {info}")
 
     if args.gradient_checkpointing:
         unet.enable_gradient_checkpointing()

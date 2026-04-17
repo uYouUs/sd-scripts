@@ -1535,7 +1535,7 @@ def convert_comfyui_state_dict(sd):
             new_key = key.replace(key_without_suffix, key_map[key_without_suffix])
         new_state_dict[new_key] = sd[key]
 
-    logger.info("Converted ComfyUI AutoencoderKL state dict keys to official format")
+    print("Converted ComfyUI AutoencoderKL state dict keys to official format")
     return new_state_dict
 
 
@@ -1606,11 +1606,11 @@ def load_vae(
   "z_dim": 16
 }
 """
-    logger.info("Initializing VAE")
+    print("Initializing VAE")
 
     if spatial_chunk_size is not None and spatial_chunk_size % 2 != 0:
         spatial_chunk_size += 1
-        logger.warning(f"Adjusted spatial_chunk_size to the next even number: {spatial_chunk_size}")
+        print(f"Adjusted spatial_chunk_size to the next even number: {spatial_chunk_size}")
 
     config = json.loads(VAE_CONFIG_JSON)
     vae = AutoencoderKLQwenImage(
@@ -1628,14 +1628,14 @@ def load_vae(
         disable_cache=disable_cache,
     )
 
-    logger.info(f"Loading VAE from {vae_path}")
+    print(f"Loading VAE from {vae_path}")
     state_dict = load_safetensors(vae_path, device=device, disable_mmap=disable_mmap)
 
     # Convert ComfyUI VAE keys to official VAE keys
     state_dict = convert_comfyui_state_dict(state_dict)
 
     info = vae.load_state_dict(state_dict, strict=True, assign=True)
-    logger.info(f"Loaded VAE: {info}")
+    print(f"Loaded VAE: {info}")
 
     vae.to(device)
     return vae

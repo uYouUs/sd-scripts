@@ -303,7 +303,7 @@ class Sd3TextEncoderOutputsCachingStrategy(TextEncoderOutputsCachingStrategy):
             if npz_apply_t5_attn_mask != self.apply_t5_attn_mask:
                 return False
         except Exception as e:
-            logger.error(f"Error loading file: {npz_path}")
+            print(f"Error loading file: {npz_path}")
             raise e
 
         return True

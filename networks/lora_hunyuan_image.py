@@ -92,7 +92,7 @@ def create_network(
             if not pair:
                 continue
             if "=" not in pair:
-                logger.warning(f"Invalid format: {pair}, expected 'key=value'")
+                print(f"Invalid format: {pair}, expected 'key=value'")
                 continue
             key, value = pair.split("=", 1)
             key = key.strip()
@@ -100,7 +100,7 @@ def create_network(
             try:
                 pairs[key] = int(value) if is_int else float(value)
             except ValueError:
-                logger.warning(f"Invalid value for {key}: {value}")
+                print(f"Invalid value for {key}: {value}")
         return pairs
 
     # parse regular expression based learning rates
@@ -172,7 +172,7 @@ def create_network_from_weights(multiplier, file, ae, text_encoders, flux, weigh
         elif "lora_down" in key:
             dim = value.size()[0]
             modules_dim[lora_name] = dim
-            # logger.info(lora_name, value.size(), dim)
+            # print(lora_name, value.size(), dim)
 
     split_qkv = False  # split_qkv is not needed to care, because state_dict is qkv combined
 
@@ -240,24 +240,24 @@ class HunyuanImageLoRANetwork(lora_flux.LoRANetwork):
         self.loraplus_text_encoder_lr_ratio = None
 
         if modules_dim is not None:
-            logger.info(f"create LoRA network from weights")
+            print(f"create LoRA network from weights")
             self.in_dims = [0] * 5  # create in_dims
             # verbose = True
         else:
-            logger.info(f"create LoRA network. base dim (rank): {lora_dim}, alpha: {alpha}")
-            logger.info(
+            print(f"create LoRA network. base dim (rank): {lora_dim}, alpha: {alpha}")
+            print(
                 f"neuron dropout: p={self.dropout}, rank dropout: p={self.rank_dropout}, module dropout: p={self.module_dropout}"
             )
             # if self.conv_lora_dim is not None:
-            #     logger.info(
+            #     print(
             #         f"apply LoRA to Conv2d with kernel size (3,3). dim (rank): {self.conv_lora_dim}, alpha: {self.conv_alpha}"
             #     )
 
         if ggpo_beta is not None and ggpo_sigma is not None:
-            logger.info(f"LoRA-GGPO training sigma: {ggpo_sigma} beta: {ggpo_beta}")
+            print(f"LoRA-GGPO training sigma: {ggpo_sigma} beta: {ggpo_beta}")
 
         if self.split_qkv:
-            logger.info(f"split qkv for LoRA")
+            print(f"split qkv for LoRA")
 
         # create module instances
         def create_modules(
@@ -304,7 +304,7 @@ class HunyuanImageLoRANetwork(lora_flux.LoRANetwork):
                                     if re.search(reg, lora_name):
                                         dim = d
                                         alpha = self.alpha
-                                        logger.info(f"LoRA {lora_name} matched with regex {reg}, using dim: {dim}")
+                                        print(f"LoRA {lora_name} matched with regex {reg}, using dim: {dim}")
                                         break
 
                             # if modules_dim is None, we use default lora_dim. if modules_dim is not None, we use the specified dim (no default)
@@ -358,18 +358,18 @@ class HunyuanImageLoRANetwork(lora_flux.LoRANetwork):
         self.unet_loras, skipped_un = create_modules(True, None, unet, target_replace_modules)
         self.text_encoder_loras = []
 
-        logger.info(f"create LoRA for HunyuanImage-2.1: {len(self.unet_loras)} modules.")
+        print(f"create LoRA for HunyuanImage-2.1: {len(self.unet_loras)} modules.")
         if verbose:
             for lora in self.unet_loras:
-                logger.info(f"\t{lora.lora_name:50} {lora.lora_dim}, {lora.alpha}")
+                print(f"\t{lora.lora_name:50} {lora.lora_dim}, {lora.alpha}")
 
         skipped = skipped_un
         if verbose and len(skipped) > 0:
-            logger.warning(
+            print(
                 f"because dim (rank) is 0, {len(skipped)} LoRA modules are skipped / dim (rank)が0の為、次の{len(skipped)}個のLoRAモジュールはスキップされます:"
             )
             for name in skipped:
-                logger.info(f"\t{name}")
+                print(f"\t{name}")
 
         # assertion
         names = set()

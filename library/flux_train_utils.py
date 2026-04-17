@@ -57,10 +57,10 @@ def sample_images(
             if steps % args.sample_every_n_steps != 0 or epoch is not None:  # steps is not divisible or end of epoch
                 return
 
-    logger.info("")
-    logger.info(f"generating sample images at step / サンプル画像生成 ステップ: {steps}")
+    print("")
+    print(f"generating sample images at step / サンプル画像生成 ステップ: {steps}")
     if not os.path.isfile(args.sample_prompts) and sample_prompts_te_outputs is None:
-        logger.error(f"No prompt file / プロンプトファイルがありません: {args.sample_prompts}")
+        print(f"No prompt file / プロンプトファイルがありません: {args.sample_prompts}")
         return
 
     distributed_state = PartialState()  # for multi gpu distributed inference. this is a singleton, so it's safe to use it here
@@ -179,20 +179,20 @@ def sample_image_inference(
         negative_prompt = ""
     height = max(64, height - height % 16)  # round to divisible by 16
     width = max(64, width - width % 16)  # round to divisible by 16
-    logger.info(f"prompt: {prompt}")
+    print(f"prompt: {prompt}")
     if cfg_scale != 1.0:
-        logger.info(f"negative_prompt: {negative_prompt}")
+        print(f"negative_prompt: {negative_prompt}")
     elif negative_prompt != "":
-        logger.info(f"negative prompt is ignored because scale is 1.0")
-    logger.info(f"height: {height}")
-    logger.info(f"width: {width}")
-    logger.info(f"sample_steps: {sample_steps}")
-    logger.info(f"embedded guidance scale: {emb_guidance_scale}")
+        print(f"negative prompt is ignored because scale is 1.0")
+    print(f"height: {height}")
+    print(f"width: {width}")
+    print(f"sample_steps: {sample_steps}")
+    print(f"embedded guidance scale: {emb_guidance_scale}")
     if cfg_scale != 1.0:
-        logger.info(f"CFG scale: {cfg_scale}")
-    # logger.info(f"sample_sampler: {sampler_name}")
+        print(f"CFG scale: {cfg_scale}")
+    # print(f"sample_sampler: {sampler_name}")
     if seed is not None:
-        logger.info(f"seed: {seed}")
+        print(f"seed: {seed}")
 
     # encode prompts
     tokenize_strategy = strategy_base.TokenizeStrategy.get_strategy()

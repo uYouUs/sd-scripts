@@ -79,7 +79,7 @@ def generate_image(
     #
     # 2. Encode prompts
     #
-    logger.info("Encoding prompts...")
+    print("Encoding prompts...")
 
     tokenize_strategy = strategy_lumina.LuminaTokenizeStrategy(system_prompt, args.gemma2_max_token_length)
     encoding_strategy = strategy_lumina.LuminaTextEncodingStrategy()
@@ -109,7 +109,7 @@ def generate_image(
     # 3. Prepare latents
     #
     seed = seed if seed is not None else random.randint(0, 2**32 - 1)
-    logger.info(f"Seed: {seed}")
+    print(f"Seed: {seed}")
     torch.manual_seed(seed)
 
     latent_height = image_height // 8
@@ -126,7 +126,7 @@ def generate_image(
     #
     # 4. Denoise
     #
-    logger.info("Denoising...")
+    print("Denoising...")
     scheduler = sd3_train_utils.FlowMatchEulerDiscreteScheduler(num_train_timesteps=1000, shift=args.discrete_flow_shift)
     scheduler.set_timesteps(steps, device=device)
     timesteps = scheduler.timesteps
@@ -159,7 +159,7 @@ def generate_image(
     #
     # 5. Decode latents
     #
-    logger.info("Decoding image...")
+    print("Decoding image...")
     # latents = latents / ae.scale_factor + ae.shift_factor
     with torch.no_grad():
         image = ae.decode(latents.to(ae_dtype))
@@ -177,7 +177,7 @@ def generate_image(
     seed_suffix = f"_{seed}"
     output_path = os.path.join(output_dir, f"image_{ts_str}{seed_suffix}.png")
     pil_image.save(output_path)
-    logger.info(f"Image saved to {output_path}")
+    print(f"Image saved to {output_path}")
 
 
 def setup_parser() -> argparse.ArgumentParser:
@@ -272,7 +272,7 @@ if __name__ == "__main__":
     parser = setup_parser()
     args = parser.parse_args()
 
-    logger.info("Loading models...")
+    print("Loading models...")
     device = get_preferred_device()
     if args.device:
         device = torch.device(args.device)
@@ -309,7 +309,7 @@ if __name__ == "__main__":
         else:
             lora_model.apply_to([gemma2], model)
             info = lora_model.load_state_dict(weights_sd, strict=True)
-            logger.info(f"Loaded LoRA weights from {weights_file}: {info}")
+            print(f"Loaded LoRA weights from {weights_file}: {info}")
             lora_model.to(device)
             lora_model.set_multiplier(multiplier)
             lora_model.eval()
@@ -388,15 +388,15 @@ if __name__ == "__main__":
                     elif key == "m":
                         multipliers = value.split(",")
                         if len(multipliers) != len(lora_models):
-                            logger.error(f"Invalid number of multipliers, expected {len(lora_models)}")
+                            print(f"Invalid number of multipliers, expected {len(lora_models)}")
                             continue
                         for i, lora_model in enumerate(lora_models):
                             lora_model.set_multiplier(float(multipliers[i].strip()))
                     else:
-                        logger.warning(f"Unknown option: --{key}")
+                        print(f"Unknown option: --{key}")
 
                 except (ValueError, IndexError) as e:
-                    logger.error(f"Invalid value for option --{key}: '{value}'. Error: {e}")
+                    print(f"Invalid value for option --{key}: '{value}'. Error: {e}")
 
             generate_image(
                 model,
@@ -415,4 +415,4 @@ if __name__ == "__main__":
                 renorm_cfg,
             )
 
-    logger.info("Done.")
+    print("Done.")

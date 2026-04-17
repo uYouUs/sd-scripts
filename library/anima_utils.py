@@ -102,7 +102,7 @@ def load_anima_model(
             model.to(dit_weight_dtype)
 
     # load model weights with dynamic fp8 optimization and LoRA merging if needed
-    logger.info(f"Loading DiT model from {dit_path}, device={loading_device}")
+    print(f"Loading DiT model from {dit_path}, device={loading_device}")
     rename_hooks = WeightTransformHooks(rename_hook=lambda k: k[len("net.") :] if k.startswith("net.") else k)
     sd = load_safetensors_with_lora_and_fp8(
         model_files=dit_path,
@@ -122,7 +122,7 @@ def load_anima_model(
 
         if loading_device.type != "cpu":
             # make sure all the model weights are on the loading_device
-            logger.info(f"Moving weights to {loading_device}")
+            print(f"Moving weights to {loading_device}")
             for key in sd.keys():
                 sd[key] = sd[key].to(loading_device)
 
@@ -143,7 +143,7 @@ def load_anima_model(
     if unexpected:
         # Raise error to avoid silent failures
         raise RuntimeError(f"Unexpected keys in checkpoint: {unexpected[:5]}{'...' if len(unexpected) > 5 else ''}")
-    logger.info(f"Loaded DiT model from {dit_path}, unexpected missing keys: {len(missing)}, unexpected keys: {len(unexpected)}")
+    print(f"Loaded DiT model from {dit_path}, unexpected missing keys: {len(missing)}, unexpected keys: {len(unexpected)}")
 
     return model
 
@@ -198,7 +198,7 @@ def load_qwen3_text_encoder(
     import transformers
     from transformers import AutoTokenizer
 
-    logger.info(f"Loading Qwen3 text encoder from {qwen3_path}")
+    print(f"Loading Qwen3 text encoder from {qwen3_path}")
 
     if os.path.isdir(qwen3_path):
         # Directory with full model
@@ -245,7 +245,7 @@ def load_qwen3_text_encoder(
                 new_sd[k] = v
 
         info = model.load_state_dict(new_sd, strict=False)
-        logger.info(f"Loaded Qwen3 state dict: {info}")
+        print(f"Loaded Qwen3 state dict: {info}")
 
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
@@ -253,7 +253,7 @@ def load_qwen3_text_encoder(
     model.config.use_cache = False
     model = model.requires_grad_(False).to(device, dtype=dtype)
 
-    logger.info(f"Loaded Qwen3 text encoder. Parameters: {sum(p.numel() for p in model.parameters()):,}")
+    print(f"Loaded Qwen3 text encoder. Parameters: {sum(p.numel() for p in model.parameters()):,}")
     return model, tokenizer
 
 
@@ -306,4 +306,4 @@ def save_anima_model(
     metadata["format"] = "pt"  # For compatibility with the official .safetensors file
 
     save_file(prefixed_sd, save_path, metadata=metadata)  # safetensors.save_file cosumes a lot of memory, but Anima is small enough
-    logger.info(f"Saved Anima model to {save_path}")
+    print(f"Saved Anima model to {save_path}")

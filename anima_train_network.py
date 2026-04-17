@@ -42,13 +42,13 @@ class AnimaNetworkTrainer(train_network.NetworkTrainer):
         val_dataset_group: Optional[train_util.DatasetGroup],
     ):
         if args.fp8_base or args.fp8_base_unet:
-            logger.warning("fp8_base and fp8_base_unet are not supported. / fp8_baseとfp8_base_unetはサポートされていません。")
+            print("fp8_base and fp8_base_unet are not supported. / fp8_baseとfp8_base_unetはサポートされていません。")
             args.fp8_base = False
             args.fp8_base_unet = False
         args.fp8_scaled = False  # Anima DiT does not support fp8_scaled
 
         if args.cache_text_encoder_outputs_to_disk and not args.cache_text_encoder_outputs:
-            logger.warning("cache_text_encoder_outputs_to_disk is enabled, so cache_text_encoder_outputs is also enabled")
+            print("cache_text_encoder_outputs_to_disk is enabled, so cache_text_encoder_outputs is also enabled")
             args.cache_text_encoder_outputs = True
 
         if args.cache_text_encoder_outputs:
@@ -66,7 +66,7 @@ class AnimaNetworkTrainer(train_network.NetworkTrainer):
 
         if args.unsloth_offload_checkpointing:
             if not args.gradient_checkpointing:
-                logger.warning("unsloth_offload_checkpointing is enabled, so gradient_checkpointing is also enabled")
+                print("unsloth_offload_checkpointing is enabled, so gradient_checkpointing is also enabled")
                 args.gradient_checkpointing = True
             assert (
                 not args.cpu_offload_checkpointing
@@ -83,12 +83,12 @@ class AnimaNetworkTrainer(train_network.NetworkTrainer):
         self.is_swapping_blocks = args.blocks_to_swap is not None and args.blocks_to_swap > 0
 
         # Load Qwen3 text encoder (tokenizers already loaded in get_tokenize_strategy)
-        logger.info("Loading Qwen3 text encoder...")
+        print("Loading Qwen3 text encoder...")
         qwen3_text_encoder, _ = anima_utils.load_qwen3_text_encoder(args.qwen3, dtype=weight_dtype, device="cpu")
         qwen3_text_encoder.eval()
 
         # Load VAE
-        logger.info("Loading Anima VAE...")
+        print("Loading Anima VAE...")
         vae = qwen_image_autoencoder_kl.load_vae(
             args.vae, device="cpu", disable_mmap=True, spatial_chunk_size=args.vae_chunk_size, disable_cache=args.vae_disable_cache
         )
@@ -109,7 +109,7 @@ class AnimaNetworkTrainer(train_network.NetworkTrainer):
             attn_mode = args.attn_mode
 
         # Load DiT
-        logger.info(f"Loading Anima DiT model with attn_mode={attn_mode}, split_attn: {args.split_attn}...")
+        print(f"Loading Anima DiT model with attn_mode={attn_mode}, split_attn: {args.split_attn}...")
         model = anima_utils.load_anima_model(
             accelerator.device,
             args.pretrained_model_name_or_path,
@@ -128,7 +128,7 @@ class AnimaNetworkTrainer(train_network.NetworkTrainer):
         # Block swap
         self.is_swapping_blocks = args.blocks_to_swap is not None and args.blocks_to_swap > 0
         if self.is_swapping_blocks:
-            logger.info(f"enable block swap: blocks_to_swap={args.blocks_to_swap}")
+            print(f"enable block swap: blocks_to_swap={args.blocks_to_swap}")
             model.enable_block_swap(args.blocks_to_swap, accelerator.device)
 
         return model, text_encoders
@@ -173,12 +173,12 @@ class AnimaNetworkTrainer(train_network.NetworkTrainer):
         if args.cache_text_encoder_outputs:
             if not args.lowram:
                 # We cannot move DiT to CPU because of block swap, so only move VAE
-                logger.info("move vae to cpu to save memory")
+                print("move vae to cpu to save memory")
                 org_vae_device = vae.device
                 vae.to("cpu")
                 clean_memory_on_device(accelerator.device)
 
-            logger.info("move text encoder to gpu")
+            print("move text encoder to gpu")
             text_encoders[0].to(accelerator.device)
 
             with accelerator.autocast():
@@ -186,7 +186,7 @@ class AnimaNetworkTrainer(train_network.NetworkTrainer):
 
             # cache sample prompts
             if args.sample_prompts is not None:
-                logger.info(f"cache Text Encoder outputs for sample prompts: {args.sample_prompts}")
+                print(f"cache Text Encoder outputs for sample prompts: {args.sample_prompts}")
 
                 tokenize_strategy = strategy_base.TokenizeStrategy.get_strategy()
                 text_encoding_strategy = strategy_base.TextEncodingStrategy.get_strategy()
@@ -197,7 +197,7 @@ class AnimaNetworkTrainer(train_network.NetworkTrainer):
                     for prompt_dict in prompts:
                         for p in [prompt_dict.get("prompt", ""), prompt_dict.get("negative_prompt", "")]:
                             if p not in sample_prompts_te_outputs:
-                                logger.info(f"  cache TE outputs for: {p}")
+                                print(f"  cache TE outputs for: {p}")
                                 tokens_and_masks = tokenize_strategy.tokenize(p)
                                 sample_prompts_te_outputs[p] = text_encoding_strategy.encode_tokens(
                                     tokenize_strategy, text_encoders, tokens_and_masks
@@ -207,11 +207,11 @@ class AnimaNetworkTrainer(train_network.NetworkTrainer):
             accelerator.wait_for_everyone()
 
             # move text encoder back to cpu
-            logger.info("move text encoder back to cpu")
+            print("move text encoder back to cpu")
             text_encoders[0].to("cpu")
 
             if not args.lowram:
-                logger.info("move vae back to original device")
+                print("move vae back to original device")
                 vae.to(org_vae_device)
 
             clean_memory_on_device(accelerator.device)

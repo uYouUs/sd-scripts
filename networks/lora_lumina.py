@@ -220,7 +220,7 @@ class LoRAInfModule(LoRAModule):
             else:
                 # conv2d 3x3
                 conved = torch.nn.functional.conv2d(down_weight.permute(1, 0, 2, 3), up_weight).permute(1, 0, 2, 3)
-                # logger.info(conved.size(), weight.size(), module.stride, module.padding)
+                # print(conved.size(), weight.size(), module.stride, module.padding)
                 weight = weight + self.multiplier * conved * self.scale
 
             # set weight to org_module
@@ -285,7 +285,7 @@ class LoRAInfModule(LoRAModule):
         self.region_mask = None
 
     def default_forward(self, x):
-        # logger.info(f"default_forward {self.lora_name} {x.size()}")
+        # print(f"default_forward {self.lora_name} {x.size()}")
         if self.split_dims is None:
             lx = self.lora_down(x)
             lx = self.lora_up(lx)
@@ -432,7 +432,7 @@ def create_network_from_weights(multiplier, file, ae, text_encoders, lumina, wei
         elif "lora_down" in key:
             dim = value.size()[0]
             modules_dim[lora_name] = dim
-            # logger.info(lora_name, value.size(), dim)
+            # print(lora_name, value.size(), dim)
 
     # # split qkv
     # double_qkv_rank = None
@@ -517,22 +517,22 @@ class LoRANetwork(torch.nn.Module):
         self.loraplus_text_encoder_lr_ratio = None
 
         if modules_dim is not None:
-            logger.info(f"create LoRA network from weights")
+            print(f"create LoRA network from weights")
             self.embedder_dims = [0] * 5  # create embedder_dims
             # verbose = True
         else:
-            logger.info(f"create LoRA network. base dim (rank): {lora_dim}, alpha: {alpha}")
-            logger.info(
+            print(f"create LoRA network. base dim (rank): {lora_dim}, alpha: {alpha}")
+            print(
                 f"neuron dropout: p={self.dropout}, rank dropout: p={self.rank_dropout}, module dropout: p={self.module_dropout}"
             )
             # if self.conv_lora_dim is not None:
-            #     logger.info(
+            #     print(
             #         f"apply LoRA to Conv2d with kernel size (3,3). dim (rank): {self.conv_lora_dim}, alpha: {self.conv_alpha}"
             #     )
         if self.split_qkv:
-            logger.info(f"split qkv for LoRA")
+            print(f"split qkv for LoRA")
         if self.train_blocks is not None:
-            logger.info(f"train {self.train_blocks} blocks only")
+            print(f"train {self.train_blocks} blocks only")
 
         # create module instances
         def create_modules(
@@ -635,9 +635,9 @@ class LoRANetwork(torch.nn.Module):
         self.text_encoder_loras: List[Union[LoRAModule, LoRAInfModule]] = []
         skipped_te = []
 
-        logger.info(f"create LoRA for Gemma2 Text Encoder:")
+        print(f"create LoRA for Gemma2 Text Encoder:")
         text_encoder_loras, skipped = create_modules(False, text_encoders[0], LoRANetwork.TEXT_ENCODER_TARGET_REPLACE_MODULE)
-        logger.info(f"create LoRA for Gemma2 Text Encoder: {len(text_encoder_loras)} modules.")
+        print(f"create LoRA for Gemma2 Text Encoder: {len(text_encoder_loras)} modules.")
         self.text_encoder_loras.extend(text_encoder_loras)
         skipped_te += skipped
 
@@ -673,18 +673,18 @@ class LoRANetwork(torch.nn.Module):
                 loras, _ = create_modules(True, unet, None, filter=filter, default_dim=embedder_dim)
                 self.unet_loras.extend(loras)
 
-        logger.info(f"create LoRA for Lumina blocks: {len(self.unet_loras)} modules.")
+        print(f"create LoRA for Lumina blocks: {len(self.unet_loras)} modules.")
         if verbose:
             for lora in self.unet_loras:
-                logger.info(f"\t{lora.lora_name:50} {lora.lora_dim}, {lora.alpha}")
+                print(f"\t{lora.lora_name:50} {lora.lora_dim}, {lora.alpha}")
 
         skipped = skipped_te + skipped_un
         if verbose and len(skipped) > 0:
-            logger.warning(
+            print(
                 f"because dim (rank) is 0, {len(skipped)} LoRA modules are skipped / dim (rank)が0の為、次の{len(skipped)}個のLoRAモジュールはスキップされます:"
             )
             for name in skipped:
-                logger.info(f"\t{name}")
+                print(f"\t{name}")
 
         # assertion
         names = set()
@@ -813,12 +813,12 @@ class LoRANetwork(torch.nn.Module):
 
     def apply_to(self, text_encoders, flux, apply_text_encoder=True, apply_unet=True):
         if apply_text_encoder:
-            logger.info(f"enable LoRA for text encoder: {len(self.text_encoder_loras)} modules")
+            print(f"enable LoRA for text encoder: {len(self.text_encoder_loras)} modules")
         else:
             self.text_encoder_loras = []
 
         if apply_unet:
-            logger.info(f"enable LoRA for U-Net: {len(self.unet_loras)} modules")
+            print(f"enable LoRA for U-Net: {len(self.unet_loras)} modules")
         else:
             self.unet_loras = []
 
@@ -840,12 +840,12 @@ class LoRANetwork(torch.nn.Module):
                 apply_unet = True
 
         if apply_text_encoder:
-            logger.info("enable LoRA for text encoder")
+            print("enable LoRA for text encoder")
         else:
             self.text_encoder_loras = []
 
         if apply_unet:
-            logger.info("enable LoRA for U-Net")
+            print("enable LoRA for U-Net")
         else:
             self.unet_loras = []
 
@@ -856,15 +856,15 @@ class LoRANetwork(torch.nn.Module):
                     sd_for_lora[key[len(lora.lora_name) + 1 :]] = weights_sd[key]
             lora.merge_to(sd_for_lora, dtype, device)
 
-        logger.info(f"weights are merged")
+        print(f"weights are merged")
 
     def set_loraplus_lr_ratio(self, loraplus_lr_ratio, loraplus_unet_lr_ratio, loraplus_text_encoder_lr_ratio):
         self.loraplus_lr_ratio = loraplus_lr_ratio
         self.loraplus_unet_lr_ratio = loraplus_unet_lr_ratio
         self.loraplus_text_encoder_lr_ratio = loraplus_text_encoder_lr_ratio
 
-        logger.info(f"LoRA+ UNet LR Ratio: {self.loraplus_unet_lr_ratio or self.loraplus_lr_ratio}")
-        logger.info(f"LoRA+ Text Encoder LR Ratio: {self.loraplus_text_encoder_lr_ratio or self.loraplus_lr_ratio}")
+        print(f"LoRA+ UNet LR Ratio: {self.loraplus_unet_lr_ratio or self.loraplus_lr_ratio}")
+        print(f"LoRA+ Text Encoder LR Ratio: {self.loraplus_text_encoder_lr_ratio or self.loraplus_lr_ratio}")
 
     def prepare_optimizer_params_with_multiple_te_lrs(self, text_encoder_lr, unet_lr, default_lr):
         # make sure text_encoder_lr as list of two elements
@@ -905,7 +905,7 @@ class LoRANetwork(torch.nn.Module):
                         param_data["lr"] = lr
 
                 if param_data.get("lr", None) == 0 or param_data.get("lr", None) is None:
-                    logger.info("NO LR skipping!")
+                    print("NO LR skipping!")
                     continue
 
                 params.append(param_data)
@@ -919,7 +919,7 @@ class LoRANetwork(torch.nn.Module):
             # split text encoder loras for te1 and te3
             te_loras = [lora for lora in self.text_encoder_loras]
             if len(te_loras) > 0:
-                logger.info(f"Text Encoder: {len(te_loras)} modules, LR {text_encoder_lr[0]}")
+                print(f"Text Encoder: {len(te_loras)} modules, LR {text_encoder_lr[0]}")
                 params, descriptions = assemble_params(te_loras, text_encoder_lr[0], loraplus_lr_ratio)
                 all_params.extend(params)
                 lr_descriptions.extend(["textencoder " + (" " + d if d else "") for d in descriptions])

@@ -743,13 +743,13 @@ class HunyuanVAE2D(nn.Module):
 
 
 def load_vae(vae_path: str, device: torch.device, disable_mmap: bool = False, chunk_size: Optional[int] = None) -> HunyuanVAE2D:
-    logger.info(f"Initializing VAE with chunk_size={chunk_size}")
+    print(f"Initializing VAE with chunk_size={chunk_size}")
     vae = HunyuanVAE2D(chunk_size=chunk_size)
 
-    logger.info(f"Loading VAE from {vae_path}")
+    print(f"Loading VAE from {vae_path}")
     state_dict = load_safetensors(vae_path, device=device, disable_mmap=disable_mmap)
     info = vae.load_state_dict(state_dict, strict=True, assign=True)
-    logger.info(f"Loaded VAE: {info}")
+    print(f"Loaded VAE: {info}")
 
     vae.to(device)
     return vae

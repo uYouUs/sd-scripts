@@ -1259,7 +1259,7 @@ class Anima(nn.Module):
         ), f"Cannot swap more than {self.num_blocks - 2} blocks. Requested: {self.blocks_to_swap} blocks."
 
         self.offloader = custom_offloading_utils.ModelOffloader(self.blocks, self.blocks_to_swap, device)
-        logger.info(f"Anima: Block swap enabled. Swapping {num_blocks} blocks, total blocks: {self.num_blocks}, device: {device}.")
+        print(f"Anima: Block swap enabled. Swapping {num_blocks} blocks, total blocks: {self.num_blocks}, device: {device}.")
 
     def move_to_device_except_swap_blocks(self, device: torch.device):
         # Move all modules to device except blocks (which are managed by offloader)

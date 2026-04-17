@@ -215,7 +215,7 @@ def resize_lora_model(lora_sd, new_rank, new_conv_rank, save_dtype, device, dyna
     fro_list = []
 
     if dynamic_method:
-        logger.info(
+        print(
             f"Dynamically determining new alphas and dims based off {dynamic_method}: {dynamic_param}, max rank is {new_rank}"
         )
 
@@ -306,7 +306,7 @@ def resize_lora_model(lora_sd, new_rank, new_conv_rank, save_dtype, device, dyna
 
     if verbose:
         print(f"Average Frobenius norm retention: {np.mean(fro_list):.2%} | std: {np.std(fro_list):0.3f}")
-    logger.info("resizing complete")
+    print("resizing complete")
     return o_lora_sd, max_old_rank, new_alpha
 
 
@@ -338,10 +338,10 @@ def resize(args):
     if save_dtype is None:
         save_dtype = merge_dtype
 
-    logger.info("loading Model...")
+    print("loading Model...")
     lora_sd, metadata = load_state_dict(args.model, merge_dtype)
 
-    logger.info("Resizing Lora...")
+    print("Resizing Lora...")
     state_dict, old_dim, new_alpha = resize_lora_model(
         lora_sd, args.new_rank, args.new_conv_rank, save_dtype, args.device, args.dynamic_method, args.dynamic_param, args.verbose, args.svd_lowrank_niter
     )
@@ -374,7 +374,7 @@ def resize(args):
     metadata["sshs_model_hash"] = model_hash
     metadata["sshs_legacy_hash"] = legacy_hash
 
-    logger.info(f"saving model to: {args.save_to}")
+    print(f"saving model to: {args.save_to}")
     save_to_file(args.save_to, state_dict, metadata)
 
 

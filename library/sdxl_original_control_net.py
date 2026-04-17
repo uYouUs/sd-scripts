@@ -199,28 +199,28 @@ class SdxlControlledUNet(sdxl_original_unet.SdxlUNet2DConditionModel):
 if __name__ == "__main__":
     import time
 
-    logger.info("create unet")
+    print("create unet")
     unet = SdxlControlledUNet()
     unet.to("cuda", torch.bfloat16)
     unet.set_use_sdpa(True)
     unet.set_gradient_checkpointing(True)
     unet.train()
 
-    logger.info("create control_net")
+    print("create control_net")
     control_net = SdxlControlNet()
     control_net.to("cuda")
     control_net.set_use_sdpa(True)
     control_net.set_gradient_checkpointing(True)
     control_net.train()
 
-    logger.info("Initialize control_net from unet")
+    print("Initialize control_net from unet")
     control_net.init_from_unet(unet)
 
     unet.requires_grad_(False)
     control_net.requires_grad_(True)
 
     # 使用メモリ量確認用の疑似学習ループ
-    logger.info("preparing optimizer")
+    print("preparing optimizer")
 
     # optimizer = torch.optim.SGD(unet.parameters(), lr=1e-3, nesterov=True, momentum=0.9) # not working
 
@@ -235,12 +235,12 @@ if __name__ == "__main__":
 
     scaler = torch.cuda.amp.GradScaler(enabled=True)
 
-    logger.info("start training")
+    print("start training")
     steps = 10
     batch_size = 1
 
     for step in range(steps):
-        logger.info(f"step {step}")
+        print(f"step {step}")
         if step == 1:
             time_start = time.perf_counter()
 
@@ -262,9 +262,9 @@ if __name__ == "__main__":
         optimizer.zero_grad(set_to_none=True)
 
     time_end = time.perf_counter()
-    logger.info(f"elapsed time: {time_end - time_start} [sec] for last {steps - 1} steps")
+    print(f"elapsed time: {time_end - time_start} [sec] for last {steps - 1} steps")
 
-    logger.info("finish training")
+    print("finish training")
     sd = control_net.state_dict()
 
     from safetensors.torch import save_file

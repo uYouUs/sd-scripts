@@ -40,7 +40,7 @@ class LuminaNetworkTrainer(train_network.NetworkTrainer):
         super().assert_extra_args(args, train_dataset_group, val_dataset_group)
 
         if args.cache_text_encoder_outputs_to_disk and not args.cache_text_encoder_outputs:
-            logger.warning("Enabling cache_text_encoder_outputs due to disk caching")
+            print("Enabling cache_text_encoder_outputs due to disk caching")
             args.cache_text_encoder_outputs = True
 
         train_dataset_group.verify_bucket_reso_steps(16)
@@ -66,16 +66,16 @@ class LuminaNetworkTrainer(train_network.NetworkTrainer):
             if model.dtype == torch.float8_e4m3fnuz or model.dtype == torch.float8_e5m2 or model.dtype == torch.float8_e5m2fnuz:
                 raise ValueError(f"Unsupported fp8 model dtype: {model.dtype}")
             elif model.dtype == torch.float8_e4m3fn:
-                logger.info("Loaded fp8 Lumina 2 model")
+                print("Loaded fp8 Lumina 2 model")
             else:
-                logger.info(
+                print(
                     "Cast Lumina 2 model to fp8. This may take a while. You can reduce the time by using fp8 checkpoint."
                     " / Lumina 2モデルをfp8に変換しています。これには時間がかかる場合があります。fp8チェックポイントを使用することで時間を短縮できます。"
                 )
                 model.to(torch.float8_e4m3fn)
 
         if args.blocks_to_swap:
-            logger.info(f"Lumina 2: Enabling block swap: {args.blocks_to_swap}")
+            print(f"Lumina 2: Enabling block swap: {args.blocks_to_swap}")
             model.enable_block_swap(args.blocks_to_swap, accelerator.device)
             self.is_swapping_blocks = True
 
@@ -125,7 +125,7 @@ class LuminaNetworkTrainer(train_network.NetworkTrainer):
         if args.cache_text_encoder_outputs:
             if not args.lowram:
                 # メモリ消費を減らす
-                logger.info("move vae and unet to cpu to save memory")
+                print("move vae and unet to cpu to save memory")
                 org_vae_device = vae.device
                 org_unet_device = unet.device
                 vae.to("cpu")
@@ -133,7 +133,7 @@ class LuminaNetworkTrainer(train_network.NetworkTrainer):
                 clean_memory_on_device(accelerator.device)
 
             # When TE is not be trained, it will not be prepared so we need to use explicit autocast
-            logger.info("move text encoders to gpu")
+            print("move text encoders to gpu")
             # Lumina uses a single text encoder (Gemma2) at index 0.
             # Check original dtype BEFORE casting to preserve fp8 detection.
             gemma2_original_dtype = text_encoders[0].dtype
@@ -151,7 +151,7 @@ class LuminaNetworkTrainer(train_network.NetworkTrainer):
 
             # cache sample prompts
             if args.sample_prompts is not None:
-                logger.info(f"cache Text Encoder outputs for sample prompts: {args.sample_prompts}")
+                print(f"cache Text Encoder outputs for sample prompts: {args.sample_prompts}")
 
                 tokenize_strategy = strategy_base.TokenizeStrategy.get_strategy()
                 text_encoding_strategy = strategy_base.TextEncodingStrategy.get_strategy()
@@ -171,7 +171,7 @@ class LuminaNetworkTrainer(train_network.NetworkTrainer):
                             if prompt in sample_prompts_te_outputs:
                                 continue
 
-                            logger.info(f"cache Text Encoder outputs for prompt: {prompt}")
+                            print(f"cache Text Encoder outputs for prompt: {prompt}")
                             tokens_and_masks = tokenize_strategy.tokenize(prompt, i == 1) # i == 1 means negative prompt
                             sample_prompts_te_outputs[prompt] = text_encoding_strategy.encode_tokens(
                                 tokenize_strategy,
@@ -185,12 +185,12 @@ class LuminaNetworkTrainer(train_network.NetworkTrainer):
 
             # move back to cpu
             if not self.is_train_text_encoder(args):
-                logger.info("move Gemma 2 back to cpu")
+                print("move Gemma 2 back to cpu")
                 text_encoders[0].to("cpu")
             clean_memory_on_device(accelerator.device)
 
             if not args.lowram:
-                logger.info("move vae and unet back to original device")
+                print("move vae and unet back to original device")
                 vae.to(org_vae_device)
                 unet.to(org_unet_device)
         else:
@@ -344,7 +344,7 @@ class LuminaNetworkTrainer(train_network.NetworkTrainer):
         text_encoder.embed_tokens.requires_grad_(True)
 
     def prepare_text_encoder_fp8(self, index, text_encoder, te_weight_dtype, weight_dtype):
-        logger.info(f"prepare Gemma2 for fp8: set to {te_weight_dtype}, set embeddings to {weight_dtype}")
+        print(f"prepare Gemma2 for fp8: set to {te_weight_dtype}, set embeddings to {weight_dtype}")
         text_encoder.to(te_weight_dtype)  # fp8
         text_encoder.embed_tokens.to(dtype=weight_dtype)
 

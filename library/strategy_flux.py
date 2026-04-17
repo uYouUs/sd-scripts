@@ -128,7 +128,7 @@ class FluxTextEncoderOutputsCachingStrategy(TextEncoderOutputsCachingStrategy):
             if npz_apply_t5_attn_mask != self.apply_t5_attn_mask:
                 return False
         except Exception as e:
-            logger.error(f"Error loading file: {npz_path}")
+            print(f"Error loading file: {npz_path}")
             raise e
 
         return True
@@ -147,7 +147,7 @@ class FluxTextEncoderOutputsCachingStrategy(TextEncoderOutputsCachingStrategy):
     ):
         if not self.warn_fp8_weights:
             if flux_utils.get_t5xxl_actual_dtype(models[1]) == torch.float8_e4m3fn:
-                logger.warning(
+                print(
                     "T5 model is using fp8 weights for caching. This may affect the quality of the cached outputs."
                     " / T5モデルはfp8の重みを使用しています。これはキャッシュの品質に影響を与える可能性があります。"
                 )

@@ -17,14 +17,14 @@ COMFYUI_QWEN3_PREFIX = "text_encoders.qwen3_06b.transformer.model."
 
 def main(args):
     # load source safetensors
-    logger.info(f"Loading source file {args.src_path}")
+    print(f"Loading source file {args.src_path}")
     state_dict = {}
     with safe_open(args.src_path, framework="pt") as f:
         metadata = f.metadata()
         for k in f.keys():
             state_dict[k] = f.get_tensor(k)
 
-    logger.info(f"Converting...")
+    print(f"Converting...")
 
     keys = list(state_dict.keys())
     count = 0
@@ -93,7 +93,7 @@ def main(args):
                 is_dit_lora = False
                 module_and_weight_name = k[len(COMFYUI_QWEN3_PREFIX) :]
             else:
-                logger.warning(f"Skipping unrecognized key {k}")
+                print(f"Skipping unrecognized key {k}")
                 continue
 
             # Get weight name
@@ -121,23 +121,23 @@ def main(args):
         state_dict[new_k] = state_dict.pop(k)
         count += 1
 
-    logger.info(f"Converted {count} keys")
+    print(f"Converted {count} keys")
     if count == 0:
-        logger.warning("No keys were converted. Please check if the source file is in the expected format.")
+        print("No keys were converted. Please check if the source file is in the expected format.")
     elif count > 0 and count < len(keys):
-        logger.warning(
+        print(
             f"Only {count} out of {len(keys)} keys were converted. Please check if there are unexpected keys in the source file."
         )
 
     # Calculate hash
     if metadata is not None:
-        logger.info(f"Calculating hashes and creating metadata...")
+        print(f"Calculating hashes and creating metadata...")
         model_hash, legacy_hash = train_util.precalculate_safetensors_hashes(state_dict, metadata)
         metadata["sshs_model_hash"] = model_hash
         metadata["sshs_legacy_hash"] = legacy_hash
 
     # save destination safetensors
-    logger.info(f"Saving destination file {args.dst_path}")
+    print(f"Saving destination file {args.dst_path}")
     save_file(state_dict, args.dst_path, metadata=metadata)
 
 

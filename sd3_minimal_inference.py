@@ -149,7 +149,7 @@ def generate_image(
     cfg_scale: float,
 ):
     # prepare embeddings
-    logger.info("Encoding prompts...")
+    print("Encoding prompts...")
 
     # TODO support one-by-one offloading
     clip_l.to(device)
@@ -177,7 +177,7 @@ def generate_image(
         t5xxl.to("cpu")
 
     # generate image
-    logger.info("Generating image...")
+    print("Generating image...")
     mmdit.to(device)
     latent_sampled = do_sample(target_height, target_width, None, seed, cond, neg_cond, mmdit, steps, cfg_scale, sd3_dtype, device)
     if args.offload:
@@ -203,7 +203,7 @@ def generate_image(
     output_path = os.path.join(output_dir, f"{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.png")
     out_image.save(output_path)
 
-    logger.info(f"Saved image to {output_path}")
+    print(f"Saved image to {output_path}")
 
 
 if __name__ == "__main__":
@@ -261,7 +261,7 @@ if __name__ == "__main__":
     loading_device = "cpu" if args.offload else device
 
     # load state dict
-    logger.info(f"Loading SD3 models from {args.ckpt_path}...")
+    print(f"Loading SD3 models from {args.ckpt_path}...")
     # state_dict = load_file(args.ckpt_path)
     state_dict = load_safetensors(args.ckpt_path, loading_device, disable_mmap=True, dtype=sd3_dtype)
 
@@ -294,7 +294,7 @@ if __name__ == "__main__":
     vae.eval()
 
     # load tokenizers
-    logger.info("Loading tokenizers...")
+    print("Loading tokenizers...")
     tokenize_strategy = strategy_sd3.Sd3TokenizeStrategy(args.t5xxl_token_length)
     encoding_strategy = strategy_sd3.Sd3TextEncodingStrategy()
 
@@ -316,7 +316,7 @@ if __name__ == "__main__":
         else:
             lora_model.apply_to([clip_l, clip_g, t5xxl], mmdit)
             info = lora_model.load_state_dict(weights_sd, strict=True)
-            logger.info(f"Loaded LoRA weights from {weights_file}: {info}")
+            print(f"Loaded LoRA weights from {weights_file}: {info}")
             lora_model.eval()
             lora_model.to(device)
 
@@ -375,7 +375,7 @@ if __name__ == "__main__":
                     elif opt.startswith("m"):
                         mutipliers = opt[1:].strip().split(",")
                         if len(mutipliers) != len(lora_models):
-                            logger.error(f"Invalid number of multipliers, expected {len(lora_models)}")
+                            print(f"Invalid number of multipliers, expected {len(lora_models)}")
                             continue
                         for i, lora_model in enumerate(lora_models):
                             lora_model.set_multiplier(float(mutipliers[i]))
@@ -386,7 +386,7 @@ if __name__ == "__main__":
                     elif opt.startswith("c"):
                         cfg_scale = float(opt[1:].strip())
                 except ValueError as e:
-                    logger.error(f"Invalid option: {opt}, {e}")
+                    print(f"Invalid option: {opt}, {e}")
 
             generate_image(
                 mmdit,
@@ -404,4 +404,4 @@ if __name__ == "__main__":
                 cfg_scale,
             )
 
-    logger.info("Done!")
+    print("Done!")

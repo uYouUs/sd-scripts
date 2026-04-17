@@ -170,7 +170,7 @@ def optimize_state_dict_with_fp8(
             # free memory on calculation device
             clean_memory_on_device(calc_device)
 
-    logger.info(f"Number of optimized Linear layers: {optimized_count}")
+    print(f"Number of optimized Linear layers: {optimized_count}")
     return state_dict
 
 
@@ -193,7 +193,7 @@ def quantize_weight(
             out_features, in_features = tensor.shape
             if in_features % block_size != 0:
                 quantization_mode = "channel"  # fallback to per-channel
-                logger.warning(
+                print(
                     f"Layer {key} with shape {tensor.shape} is not divisible by block_size {block_size}, fallback to per-channel quantization."
                 )
             else:
@@ -348,7 +348,7 @@ def load_safetensors_with_fp8_optimization(
                     # free memory on calculation device
                     clean_memory_on_device(calc_device)
 
-    logger.info(f"Number of optimized Linear layers: {optimized_count}")
+    print(f"Number of optimized Linear layers: {optimized_count}")
     return state_dict
 
 
@@ -478,5 +478,5 @@ def apply_fp8_monkey_patch(model, optimized_state_dict, use_scaled_mm=False):
 
             patched_count += 1
 
-    logger.info(f"Number of monkey-patched Linear layers: {patched_count}")
+    print(f"Number of monkey-patched Linear layers: {patched_count}")
     return model

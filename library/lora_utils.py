@@ -27,20 +27,20 @@ def filter_lora_state_dict(
     if include_pattern is not None:
         regex_include = re.compile(include_pattern)
         weights_sd = {k: v for k, v in weights_sd.items() if regex_include.search(k)}
-        logger.info(f"Filtered keys with include pattern {include_pattern}: {original_key_count} -> {len(weights_sd.keys())}")
+        print(f"Filtered keys with include pattern {include_pattern}: {original_key_count} -> {len(weights_sd.keys())}")
 
     if exclude_pattern is not None:
         original_key_count_ex = len(weights_sd.keys())
         regex_exclude = re.compile(exclude_pattern)
         weights_sd = {k: v for k, v in weights_sd.items() if not regex_exclude.search(k)}
-        logger.info(f"Filtered keys with exclude pattern {exclude_pattern}: {original_key_count_ex} -> {len(weights_sd.keys())}")
+        print(f"Filtered keys with exclude pattern {exclude_pattern}: {original_key_count_ex} -> {len(weights_sd.keys())}")
 
     if len(weights_sd) != original_key_count:
         remaining_keys = list(set([k.split(".", 1)[0] for k in weights_sd.keys()]))
         remaining_keys.sort()
-        logger.info(f"Remaining LoRA modules after filtering: {remaining_keys}")
+        print(f"Remaining LoRA modules after filtering: {remaining_keys}")
         if len(weights_sd) == 0:
-            logger.warning("No keys left after filtering.")
+            print("No keys left after filtering.")
 
     return weights_sd
 
@@ -87,7 +87,7 @@ def load_safetensors_with_lora_and_fp8(
         else:
             extended_model_files.append(model_file)
     model_files = extended_model_files
-    logger.info(f"Loading model files: {model_files}")
+    print(f"Loading model files: {model_files}")
 
     # load LoRA weights
     weight_hook = None
@@ -109,7 +109,7 @@ def load_safetensors_with_lora_and_fp8(
             lora_multipliers = lora_multipliers[: len(lora_weights_list)]
 
         # Merge LoRA weights into the state dict
-        logger.info(f"Merging LoRA weights into state dict. multipliers: {lora_multipliers}")
+        print(f"Merging LoRA weights into state dict. multipliers: {lora_multipliers}")
 
         # make hook for LoRA merging
         def weight_hook_func(model_weight_key, model_weight: torch.Tensor, keep_on_calc_device=False):
@@ -173,7 +173,7 @@ def load_safetensors_with_lora_and_fp8(
                     else:
                         # conv2d 3x3
                         conved = torch.nn.functional.conv2d(down_weight.permute(1, 0, 2, 3), up_weight).permute(1, 0, 2, 3)
-                        # logger.info(conved.size(), weight.size(), module.stride, module.padding)
+                        # print(conved.size(), weight.size(), module.stride, module.padding)
                         model_weight = model_weight + multiplier * conved * scale
 
                     if original_dtype.itemsize == 1:  # fp8
@@ -225,7 +225,7 @@ def load_safetensors_with_lora_and_fp8(
         if len(lora_weight_keys) > 0:
             # if there are still LoRA keys left, it means they are not used in the model
             # this is a warning, not an error
-            logger.warning(f"Warning: not all LoRA keys are used: {', '.join(lora_weight_keys)}")
+            print(f"Warning: not all LoRA keys are used: {', '.join(lora_weight_keys)}")
 
     return state_dict
 
@@ -246,7 +246,7 @@ def load_safetensors_with_fp8_optimization_and_hook(
     Load state dict from safetensors files and merge LoRA weights into the state dict with fp8 optimization if needed.
     """
     if fp8_optimization:
-        logger.info(
+        print(
             f"Loading state dict with FP8 optimization. Dtype of weight: {dit_weight_dtype}, hook enabled: {weight_hook is not None}"
         )
         # dit_weight_dtype is not used because we use fp8 optimization
@@ -261,7 +261,7 @@ def load_safetensors_with_fp8_optimization_and_hook(
             weight_transform_hooks=weight_transform_hooks,
         )
     else:
-        logger.info(
+        print(
             f"Loading state dict without FP8 optimization. Dtype of weight: {dit_weight_dtype}, hook enabled: {weight_hook is not None}"
         )
         state_dict = {}

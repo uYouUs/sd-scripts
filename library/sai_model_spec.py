@@ -285,11 +285,11 @@ def get_implementation_version() -> str:
             commit_hash = result.stdout.strip()
             return f"sd-scripts/{commit_hash}"
         else:
-            logger.warning("Failed to get git commit hash, using fallback")
+            print("Failed to get git commit hash, using fallback")
             return "sd-scripts/unknown"
 
     except (subprocess.TimeoutExpired, subprocess.SubprocessError, FileNotFoundError) as e:
-        logger.warning(f"Could not determine git commit: {e}")
+        print(f"Could not determine git commit: {e}")
         return "sd-scripts/unknown"
 
 
@@ -465,12 +465,12 @@ def build_metadata_dataclass(
         if thumbnail_value and not thumbnail_value.startswith("data:"):
             try:
                 processed_optional_metadata["thumbnail"] = file_to_data_url(thumbnail_value)
-                logger.info(f"Converted thumbnail file {thumbnail_value} to data URL")
+                print(f"Converted thumbnail file {thumbnail_value} to data URL")
             except FileNotFoundError as e:
-                logger.warning(f"Thumbnail file not found, skipping: {e}")
+                print(f"Thumbnail file not found, skipping: {e}")
                 del processed_optional_metadata["thumbnail"]
             except Exception as e:
-                logger.warning(f"Failed to convert thumbnail to data URL: {e}")
+                print(f"Failed to convert thumbnail to data URL: {e}")
                 del processed_optional_metadata["thumbnail"]
 
     # Automatically set implementation version if not provided

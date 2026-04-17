@@ -66,10 +66,10 @@ def sample_images(
             if steps % args.sample_every_n_steps != 0 or epoch is not None:  # steps is not divisible or end of epoch
                 return
 
-    logger.info("")
-    logger.info(f"generating sample images at step / サンプル画像生成 ステップ: {steps}")
+    print("")
+    print(f"generating sample images at step / サンプル画像生成 ステップ: {steps}")
     if not os.path.isfile(args.sample_prompts) and sample_prompts_te_outputs is None:
-        logger.error(f"No prompt file / プロンプトファイルがありません: {args.sample_prompts}")
+        print(f"No prompt file / プロンプトファイルがありません: {args.sample_prompts}")
         return
 
     distributed_state = PartialState()  # for multi gpu distributed inference. this is a singleton, so it's safe to use it here
@@ -185,20 +185,20 @@ def sample_image_inference(
         negative_prompt = ""
     height = max(64, height - height % 16)  # round to divisible by 16
     width = max(64, width - width % 16)  # round to divisible by 16
-    logger.info(f"prompt: {prompt}")
+    print(f"prompt: {prompt}")
     if cfg_scale != 1.0:
-        logger.info(f"negative_prompt: {negative_prompt}")
+        print(f"negative_prompt: {negative_prompt}")
     elif negative_prompt != "":
-        logger.info(f"negative prompt is ignored because scale is 1.0")
-    logger.info(f"height: {height}")
-    logger.info(f"width: {width}")
-    logger.info(f"sample_steps: {sample_steps}")
+        print(f"negative prompt is ignored because scale is 1.0")
+    print(f"height: {height}")
+    print(f"width: {width}")
+    print(f"sample_steps: {sample_steps}")
     if cfg_scale != 1.0:
-        logger.info(f"CFG scale: {cfg_scale}")
-    logger.info(f"flow_shift: {flow_shift}")
-    # logger.info(f"sample_sampler: {sampler_name}")
+        print(f"CFG scale: {cfg_scale}")
+    print(f"flow_shift: {flow_shift}")
+    # print(f"sample_sampler: {sampler_name}")
     if seed is not None:
-        logger.info(f"seed: {seed}")
+        print(f"seed: {seed}")
 
     # encode prompts
     tokenize_strategy = strategy_base.TokenizeStrategy.get_strategy()
@@ -323,23 +323,23 @@ class HunyuanImageNetworkTrainer(train_network.NetworkTrainer):
         # sdxl_train_util.verify_sdxl_training_args(args)
 
         if args.mixed_precision == "fp16":
-            logger.warning(
+            print(
                 "mixed_precision bf16 is recommended for HunyuanImage-2.1 / HunyuanImage-2.1ではmixed_precision bf16が推奨されます"
             )
 
         if (args.fp8_base or args.fp8_base_unet) and not args.fp8_scaled:
-            logger.warning(
+            print(
                 "fp8_base and fp8_base_unet are not supported. Use fp8_scaled instead / fp8_baseとfp8_base_unetはサポートされていません。代わりにfp8_scaledを使用してください"
             )
         if args.fp8_scaled and (args.fp8_base or args.fp8_base_unet):
-            logger.info(
+            print(
                 "fp8_scaled is used, so fp8_base and fp8_base_unet are ignored / fp8_scaledが使われているので、fp8_baseとfp8_base_unetは無視されます"
             )
             args.fp8_base = False
             args.fp8_base_unet = False
 
         if args.cache_text_encoder_outputs_to_disk and not args.cache_text_encoder_outputs:
-            logger.warning(
+            print(
                 "cache_text_encoder_outputs_to_disk is enabled, so cache_text_encoder_outputs is also enabled / cache_text_encoder_outputs_to_diskが有効になっているため、cache_text_encoder_outputsも有効になります"
             )
             args.cache_text_encoder_outputs = True
@@ -376,7 +376,7 @@ class HunyuanImageNetworkTrainer(train_network.NetworkTrainer):
 
     def load_unet_lazily(self, args, weight_dtype, accelerator, text_encoders) -> tuple[nn.Module, list[nn.Module]]:
         if args.cache_text_encoder_outputs:
-            logger.info("Replace text encoders with dummy models to save memory")
+            print("Replace text encoders with dummy models to save memory")
 
             # This doesn't free memory, so we move text encoders to meta device in cache_text_encoder_outputs_if_needed
             text_encoders = [flux_utils.dummy_clip_l() for _ in text_encoders]
@@ -392,7 +392,7 @@ class HunyuanImageNetworkTrainer(train_network.NetworkTrainer):
         if args.attn_mode is not None:
             attn_mode = args.attn_mode
 
-        logger.info(f"Loading DiT model with attn_mode: {attn_mode}, split_attn: {args.split_attn}, fp8_scaled: {args.fp8_scaled}")
+        print(f"Loading DiT model with attn_mode: {attn_mode}, split_attn: {args.split_attn}, fp8_scaled: {args.fp8_scaled}")
         model = hunyuan_image_models.load_hunyuan_image_model(
             accelerator.device,
             args.pretrained_model_name_or_path,
@@ -405,7 +405,7 @@ class HunyuanImageNetworkTrainer(train_network.NetworkTrainer):
 
         if self.is_swapping_blocks:
             # Swap blocks between CPU and GPU to reduce memory usage, in forward and backward passes.
-            logger.info(f"enable block swap: blocks_to_swap={args.blocks_to_swap}")
+            print(f"enable block swap: blocks_to_swap={args.blocks_to_swap}")
             model.enable_block_swap(args.blocks_to_swap, accelerator.device, supports_backward=True)
 
         return model, text_encoders
@@ -450,12 +450,12 @@ class HunyuanImageNetworkTrainer(train_network.NetworkTrainer):
         if args.cache_text_encoder_outputs:
             if not args.lowram:
                 # メモリ消費を減らす
-                logger.info("move vae to cpu to save memory")
+                print("move vae to cpu to save memory")
                 org_vae_device = vae.device
                 vae.to("cpu")
                 clean_memory_on_device(accelerator.device)
 
-            logger.info(f"move text encoders to {vlm_device} to encode and cache text encoder outputs")
+            print(f"move text encoders to {vlm_device} to encode and cache text encoder outputs")
             text_encoders[0].to(vlm_device)
             text_encoders[1].to(vlm_device)
 
@@ -464,7 +464,7 @@ class HunyuanImageNetworkTrainer(train_network.NetworkTrainer):
 
             # cache sample prompts
             if args.sample_prompts is not None:
-                logger.info(f"cache Text Encoder outputs for sample prompt: {args.sample_prompts}")
+                print(f"cache Text Encoder outputs for sample prompt: {args.sample_prompts}")
 
                 tokenize_strategy: strategy_hunyuan_image.HunyuanImageTokenizeStrategy = (
                     strategy_base.TokenizeStrategy.get_strategy()
@@ -479,7 +479,7 @@ class HunyuanImageNetworkTrainer(train_network.NetworkTrainer):
                     for prompt_dict in prompts:
                         for p in [prompt_dict.get("prompt", ""), prompt_dict.get("negative_prompt", "")]:
                             if p not in sample_prompts_te_outputs:
-                                logger.info(f"cache Text Encoder outputs for prompt: {p}")
+                                print(f"cache Text Encoder outputs for prompt: {p}")
                                 tokens_and_masks = tokenize_strategy.tokenize(p)
                                 sample_prompts_te_outputs[p] = text_encoding_strategy.encode_tokens(
                                     tokenize_strategy, text_encoders, tokens_and_masks
@@ -489,12 +489,12 @@ class HunyuanImageNetworkTrainer(train_network.NetworkTrainer):
             accelerator.wait_for_everyone()
 
             # text encoders are not needed for training, so we move to meta device
-            logger.info("move text encoders to meta device to save memory")
+            print("move text encoders to meta device to save memory")
             text_encoders = [te.to("meta") for te in text_encoders]
             clean_memory_on_device(accelerator.device)
 
             if not args.lowram:
-                logger.info("move vae back to original device")
+                print("move vae back to original device")
                 vae.to(org_vae_device)
         else:
             # Text Encoderから毎回出力を取得するので、GPUに乗せておく

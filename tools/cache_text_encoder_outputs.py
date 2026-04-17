@@ -67,18 +67,18 @@ def cache_to_disk(args: argparse.Namespace) -> None:
     if args.dataset_class is None:
         blueprint_generator = BlueprintGenerator(ConfigSanitizer(True, True, args.masked_loss, True))
         if use_user_config:
-            logger.info(f"Loading dataset config from {args.dataset_config}")
+            print(f"Loading dataset config from {args.dataset_config}")
             user_config = config_util.load_user_config(args.dataset_config)
             ignored = ["train_data_dir", "reg_data_dir", "in_json"]
             if any(getattr(args, attr) is not None for attr in ignored):
-                logger.warning(
+                print(
                     "ignoring the following options because config file is found: {0} / 設定ファイルが利用されるため以下のオプションは無視されます: {0}".format(
                         ", ".join(ignored)
                     )
                 )
         else:
             if use_dreambooth_method:
-                logger.info("Using DreamBooth method.")
+                print("Using DreamBooth method.")
                 user_config = {
                     "datasets": [
                         {
@@ -89,7 +89,7 @@ def cache_to_disk(args: argparse.Namespace) -> None:
                     ]
                 }
             else:
-                logger.info("Training with captions.")
+                print("Training with captions.")
                 user_config = {
                     "datasets": [
                         {
@@ -111,7 +111,7 @@ def cache_to_disk(args: argparse.Namespace) -> None:
         val_dataset_group = None
 
     # acceleratorを準備する
-    logger.info("prepare accelerator")
+    print("prepare accelerator")
     args.deepspeed = False
     accelerator = train_util.prepare_accelerator(args)
 
@@ -120,7 +120,7 @@ def cache_to_disk(args: argparse.Namespace) -> None:
     t5xxl_dtype = utils.str_to_dtype(args.t5xxl_dtype, weight_dtype)
 
     # モデルを読み込む
-    logger.info("load model")
+    print("load model")
     if is_sdxl:
         _, text_encoder1, text_encoder2, _, _, _, _ = sdxl_train_util.load_target_model(
             args, accelerator, sdxl_model_util.MODEL_VERSION_SDXL_BASE_V1_0, weight_dtype
@@ -138,15 +138,15 @@ def cache_to_disk(args: argparse.Namespace) -> None:
         if t5xxl.dtype == torch.float8_e4m3fnuz or t5xxl.dtype == torch.float8_e5m2 or t5xxl.dtype == torch.float8_e5m2fnuz:
             raise ValueError(f"Unsupported fp8 model dtype: {t5xxl.dtype}")
         elif t5xxl.dtype == torch.float8_e4m3fn:
-            logger.info("Loaded fp8 T5XXL model")
+            print("Loaded fp8 T5XXL model")
 
         if t5xxl_dtype != t5xxl_dtype:
             if t5xxl.dtype == torch.float8_e4m3fn and t5xxl_dtype.itemsize() >= 2:
-                logger.warning(
+                print(
                     "The loaded model is fp8, but the specified T5XXL dtype is larger than fp8.  This may cause a performance drop."
                     " / ロードされたモデルはfp8ですが、指定されたT5XXLのdtypeがfp8より高精度です。精度低下が発生する可能性があります。"
                 )
-            logger.info(f"Casting T5XXL model to {t5xxl_dtype}")
+            print(f"Casting T5XXL model to {t5xxl_dtype}")
             t5xxl.to(t5xxl_dtype)
 
         text_encoders = [clip_l, t5xxl]

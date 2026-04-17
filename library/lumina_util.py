@@ -42,13 +42,13 @@ def load_lumina_model(
     Returns:
         model (lumina_models.NextDiT): The loaded model.
     """
-    logger.info("Building Lumina")
+    print("Building Lumina")
     with torch.device("meta"):
         model = lumina_models.NextDiT_2B_GQA_patch2_Adaln_Refiner(use_flash_attn=use_flash_attn, use_sage_attn=use_sage_attn).to(
             dtype
         )
 
-    logger.info(f"Loading state dict from {ckpt_path}")
+    print(f"Loading state dict from {ckpt_path}")
     state_dict = load_safetensors(ckpt_path, device=device, disable_mmap=disable_mmap, dtype=dtype)
 
     # Neta-Lumina support
@@ -60,7 +60,7 @@ def load_lumina_model(
         state_dict = filtered_state_dict
 
     info = model.load_state_dict(state_dict, strict=False, assign=True)
-    logger.info(f"Loaded Lumina: {info}")
+    print(f"Loaded Lumina: {info}")
     return model
 
 
@@ -82,12 +82,12 @@ def load_ae(
     Returns:
         ae (flux_models.AutoEncoder): The loaded model.
     """
-    logger.info("Building AutoEncoder")
+    print("Building AutoEncoder")
     with torch.device("meta"):
         # dev and schnell have the same AE params
         ae = flux_models.AutoEncoder(flux_models.configs["schnell"].ae_params).to(dtype)
 
-    logger.info(f"Loading state dict from {ckpt_path}")
+    print(f"Loading state dict from {ckpt_path}")
     sd = load_safetensors(ckpt_path, device=device, disable_mmap=disable_mmap, dtype=dtype)
 
     # Neta-Lumina support
@@ -97,7 +97,7 @@ def load_ae(
         sd = filtered_sd
 
     info = ae.load_state_dict(sd, strict=False, assign=True)
-    logger.info(f"Loaded AE: {info}")
+    print(f"Loaded AE: {info}")
     return ae
 
 
@@ -121,7 +121,7 @@ def load_gemma2(
     Returns:
         gemma2 (Gemma2Model): The loaded model
     """
-    logger.info("Building Gemma2")
+    print("Building Gemma2")
     GEMMA2_CONFIG = {
         "_name_or_path": "google/gemma-2-2b",
         "architectures": ["Gemma2Model"],
@@ -161,7 +161,7 @@ def load_gemma2(
     if state_dict is not None:
         sd = state_dict
     else:
-        logger.info(f"Loading state dict from {ckpt_path}")
+        print(f"Loading state dict from {ckpt_path}")
         sd = load_safetensors(ckpt_path, device=str(device), disable_mmap=disable_mmap, dtype=dtype)
 
     for key in list(sd.keys()):
@@ -181,7 +181,7 @@ def load_gemma2(
         sd = filtered_sd
 
     info = gemma2.load_state_dict(sd, strict=False, assign=True)
-    logger.info(f"Loaded Gemma2: {info}")
+    print(f"Loaded Gemma2: {info}")
     return gemma2
 
 
@@ -233,7 +233,7 @@ DIFFUSERS_TO_ALPHA_VLLM_MAP: dict[str, str] = {
 
 def convert_diffusers_sd_to_alpha_vllm(sd: dict, num_double_blocks: int) -> dict:
     """Convert Diffusers checkpoint to Alpha-VLLM format"""
-    logger.info("Converting Diffusers checkpoint to Alpha-VLLM format")
+    print("Converting Diffusers checkpoint to Alpha-VLLM format")
     new_sd = sd.copy()  # Preserve original keys
 
     for diff_key, alpha_key in DIFFUSERS_TO_ALPHA_VLLM_MAP.items():
@@ -255,5 +255,5 @@ def convert_diffusers_sd_to_alpha_vllm(sd: dict, num_double_blocks: int) -> dict
             else:
                 print(f"Not found: {diff_key}")
 
-    logger.info(f"Converted {len(new_sd)} keys to Alpha-VLLM format")
+    print(f"Converted {len(new_sd)} keys to Alpha-VLLM format")
     return new_sd

@@ -51,16 +51,16 @@ def train(args):
         args.skip_cache_check = args.skip_latents_validity_check
 
     if args.cache_text_encoder_outputs_to_disk and not args.cache_text_encoder_outputs:
-        logger.warning("cache_text_encoder_outputs_to_disk is enabled, so cache_text_encoder_outputs is also enabled")
+        print("cache_text_encoder_outputs_to_disk is enabled, so cache_text_encoder_outputs is also enabled")
         args.cache_text_encoder_outputs = True
 
     if args.cpu_offload_checkpointing and not args.gradient_checkpointing:
-        logger.warning("cpu_offload_checkpointing is enabled, so gradient_checkpointing is also enabled")
+        print("cpu_offload_checkpointing is enabled, so gradient_checkpointing is also enabled")
         args.gradient_checkpointing = True
 
     if args.unsloth_offload_checkpointing:
         if not args.gradient_checkpointing:
-            logger.warning("unsloth_offload_checkpointing is enabled, so gradient_checkpointing is also enabled")
+            print("unsloth_offload_checkpointing is enabled, so gradient_checkpointing is also enabled")
             args.gradient_checkpointing = True
         assert not args.cpu_offload_checkpointing, "Cannot use both --unsloth_offload_checkpointing and --cpu_offload_checkpointing"
 
@@ -89,14 +89,14 @@ def train(args):
     if args.dataset_class is None:
         blueprint_generator = BlueprintGenerator(ConfigSanitizer(True, True, args.masked_loss, True))
         if args.dataset_config is not None:
-            logger.info(f"Load dataset config from {args.dataset_config}")
+            print(f"Load dataset config from {args.dataset_config}")
             user_config = config_util.load_user_config(args.dataset_config)
             ignored = ["train_data_dir", "in_json"]
             if any(getattr(args, attr) is not None for attr in ignored):
-                logger.warning("ignore following options because config file is found: {0}".format(", ".join(ignored)))
+                print("ignore following options because config file is found: {0}".format(", ".join(ignored)))
         else:
             if use_dreambooth_method:
-                logger.info("Using DreamBooth method.")
+                print("Using DreamBooth method.")
                 user_config = {
                     "datasets": [
                         {
@@ -107,7 +107,7 @@ def train(args):
                     ]
                 }
             else:
-                logger.info("Training with captions.")
+                print("Training with captions.")
                 user_config = {
                     "datasets": [
                         {
@@ -145,7 +145,7 @@ def train(args):
         train_util.debug_dataset(train_dataset_group, True)
         return
     if len(train_dataset_group) == 0:
-        logger.error("No data found. Please verify the metadata file and train_data_dir option.")
+        print("No data found. Please verify the metadata file and train_data_dir option.")
         return
 
     if cache_latents:
@@ -157,14 +157,14 @@ def train(args):
         ), "when caching text encoder output, shuffle_caption, token_warmup_step or caption_tag_dropout_rate cannot be used"
 
     # prepare accelerator
-    logger.info("prepare accelerator")
+    print("prepare accelerator")
     accelerator = train_util.prepare_accelerator(args)
 
     # mixed precision dtype
     weight_dtype, save_dtype = train_util.prepare_dtype(args)
 
     # Load tokenizers and set strategies
-    logger.info("Loading tokenizers...")
+    print("Loading tokenizers...")
     qwen3_text_encoder, qwen3_tokenizer = anima_utils.load_qwen3_text_encoder(args.qwen3, dtype=weight_dtype, device="cpu")
     t5_tokenizer = anima_utils.load_t5_tokenizer(args.t5_tokenizer_path)
 
@@ -200,14 +200,14 @@ def train(args):
 
         # cache sample prompt embeddings
         if args.sample_prompts is not None:
-            logger.info(f"Cache Text Encoder outputs for sample prompts: {args.sample_prompts}")
+            print(f"Cache Text Encoder outputs for sample prompts: {args.sample_prompts}")
             prompts = train_util.load_prompts(args.sample_prompts)
             sample_prompts_te_outputs = {}
             with accelerator.autocast(), torch.no_grad():
                 for prompt_dict in prompts:
                     for p in [prompt_dict.get("prompt", ""), prompt_dict.get("negative_prompt", "")]:
                         if p not in sample_prompts_te_outputs:
-                            logger.info(f"  cache TE outputs for: {p}")
+                            print(f"  cache TE outputs for: {p}")
                             tokens_and_masks = tokenize_strategy.tokenize(p)
                             sample_prompts_te_outputs[p] = text_encoding_strategy.encode_tokens(
                                 tokenize_strategy, [qwen3_text_encoder], tokens_and_masks
@@ -221,7 +221,7 @@ def train(args):
         clean_memory_on_device(accelerator.device)
 
     # Load VAE and cache latents
-    logger.info("Loading Anima VAE...")
+    print("Loading Anima VAE...")
     vae = qwen_image_autoencoder_kl.load_vae(
         args.vae, device="cpu", disable_mmap=True, spatial_chunk_size=args.vae_chunk_size, disable_cache=args.vae_disable_cache
     )
@@ -238,7 +238,7 @@ def train(args):
         accelerator.wait_for_everyone()
 
     # Load DiT (MiniTrainDIT + optional LLM Adapter)
-    logger.info("Loading Anima DiT...")
+    print("Loading Anima DiT...")
     dit = anima_utils.load_anima_model(
         "cpu", args.pretrained_model_name_or_path, args.attn_mode, args.split_attn, "cpu", dit_weight_dtype=None
     )
@@ -257,7 +257,7 @@ def train(args):
     # Block swap
     is_swapping_blocks = args.blocks_to_swap is not None and args.blocks_to_swap > 0
     if is_swapping_blocks:
-        logger.info(f"Enable block swap: blocks_to_swap={args.blocks_to_swap}")
+        print(f"Enable block swap: blocks_to_swap={args.blocks_to_swap}")
         dit.enable_block_swap(args.blocks_to_swap, accelerator.device)
 
     if not cache_latents:
@@ -466,11 +466,11 @@ def train(args):
     # Show model info
     unwrapped_dit = accelerator.unwrap_model(dit) if dit is not None else None
     if unwrapped_dit is not None:
-        logger.info(f"dit device: {unwrapped_dit.device}, dtype: {unwrapped_dit.dtype}")
+        print(f"dit device: {unwrapped_dit.device}, dtype: {unwrapped_dit.dtype}")
     if qwen3_text_encoder is not None:
-        logger.info(f"qwen3 device: {qwen3_text_encoder.device}")
+        print(f"qwen3 device: {qwen3_text_encoder.device}")
     if vae is not None:
-        logger.info(f"vae device: {vae.device}")
+        print(f"vae device: {vae.device}")
 
     loss_recorder = train_util.LossRecorder()
     epoch = 0
@@ -706,7 +706,7 @@ def train(args):
             global_step,
             dit,
         )
-        logger.info("model saved.")
+        print("model saved.")
 
 
 def setup_parser() -> argparse.ArgumentParser:

@@ -64,7 +64,7 @@ def svd(
         # use original safetensors.safe_open
         open_fn = lambda fn: safe_open(fn, framework="pt")
     else:
-        logger.info("Using memory efficient safe_open")
+        print("Using memory efficient safe_open")
         open_fn = lambda fn: MemoryEfficientSafeOpen(fn)
 
     with open_fn(model_org) as f_org:
@@ -146,7 +146,7 @@ def svd(
 
     save_to_file(save_to, lora_sd, metadata, save_dtype)
 
-    logger.info(f"LoRA weights saved to {save_to}")
+    print(f"LoRA weights saved to {save_to}")
 
 
 def setup_parser() -> argparse.ArgumentParser:

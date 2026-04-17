@@ -147,7 +147,7 @@ class LoKrModule(torch.nn.Module):
                 # Full matrix mode (includes kernel dimensions)
                 self.use_w2 = True
                 self.lokr_w2 = nn.Parameter(torch.empty(out_k, in_n, *k_size))
-                logger.warning(
+                print(
                     f"LoKr: lora_dim {lora_dim} is large for dim={max(in_dim, out_dim)} "
                     f"and factor={factor}, using full matrix mode for Conv2d."
                 )
@@ -172,7 +172,7 @@ class LoKrModule(torch.nn.Module):
                 self.use_w2 = True
                 self.lokr_w2 = nn.Parameter(torch.empty(out_k, in_n))
                 if lora_dim >= max(out_k, in_n) / 2:
-                    logger.warning(
+                    print(
                         f"LoKr: lora_dim {lora_dim} is large for dim={max(in_dim, out_dim)} "
                         f"and factor={factor}, using full matrix mode."
                     )

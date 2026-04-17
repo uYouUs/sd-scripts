@@ -71,7 +71,7 @@ def _parse_kv_pairs(kv_pair_str: str, is_int: bool) -> Dict[str, Union[int, floa
         if not pair:
             continue
         if "=" not in pair:
-            logger.warning(f"Invalid format: {pair}, expected 'key=value'")
+            print(f"Invalid format: {pair}, expected 'key=value'")
             continue
         key, value = pair.split("=", 1)
         key = key.strip()
@@ -79,7 +79,7 @@ def _parse_kv_pairs(kv_pair_str: str, is_int: bool) -> Dict[str, Union[int, floa
         try:
             pairs[key] = int(value) if is_int else float(value)
         except ValueError:
-            logger.warning(f"Invalid value for {key}: {value}")
+            print(f"Invalid value for {key}: {value}")
     return pairs
 
 
@@ -138,10 +138,10 @@ class AdditionalNetwork(torch.nn.Module):
             module_kwargs = {}
 
         if modules_dim is not None:
-            logger.info(f"create {module_class.__name__} network from weights")
+            print(f"create {module_class.__name__} network from weights")
         else:
-            logger.info(f"create {module_class.__name__} network. base dim (rank): {lora_dim}, alpha: {alpha}")
-            logger.info(
+            print(f"create {module_class.__name__} network. base dim (rank): {lora_dim}, alpha: {alpha}")
+            print(
                 f"neuron dropout: p={self.dropout}, rank dropout: p={self.rank_dropout}, module dropout: p={self.module_dropout}"
             )
 
@@ -153,7 +153,7 @@ class AdditionalNetwork(torch.nn.Module):
                     try:
                         re_pattern = re.compile(pattern)
                     except re.error as e:
-                        logger.error(f"Invalid pattern '{pattern}': {e}")
+                        print(f"Invalid pattern '{pattern}': {e}")
                         continue
                     re_patterns.append(re_pattern)
             return re_patterns
@@ -189,7 +189,7 @@ class AdditionalNetwork(torch.nn.Module):
                             included = any(pattern.fullmatch(original_name) for pattern in include_re_patterns)
                             if excluded and not included:
                                 if verbose:
-                                    logger.info(f"exclude: {original_name}")
+                                    print(f"exclude: {original_name}")
                                 continue
 
                             dim = None
@@ -205,7 +205,7 @@ class AdditionalNetwork(torch.nn.Module):
                                         if re.fullmatch(reg, original_name):
                                             dim = d
                                             alpha_val = self.alpha
-                                            logger.info(f"Module {original_name} matched with regex '{reg}' -> dim: {dim}")
+                                            print(f"Module {original_name} matched with regex '{reg}' -> dim: {dim}")
                                             break
                                 # fallback to default dim
                                 if dim is None:
@@ -253,9 +253,9 @@ class AdditionalNetwork(torch.nn.Module):
                 else:
                     te_prefix = arch_config.te_prefixes[0]
 
-                logger.info(f"create {module_class.__name__} for Text Encoder {i+1} (prefix={te_prefix}):")
+                print(f"create {module_class.__name__} for Text Encoder {i+1} (prefix={te_prefix}):")
                 te_loras, te_skipped = create_modules(te_prefix, text_encoder, arch_config.te_target_modules)
-                logger.info(f"create {module_class.__name__} for Text Encoder {i+1}: {len(te_loras)} modules.")
+                print(f"create {module_class.__name__} for Text Encoder {i+1}: {len(te_loras)} modules.")
                 self.text_encoder_loras.extend(te_loras)
                 skipped_te += te_skipped
 
@@ -268,17 +268,17 @@ class AdditionalNetwork(torch.nn.Module):
 
         self.unet_loras: List[torch.nn.Module]
         self.unet_loras, skipped_un = create_modules(arch_config.unet_prefix, unet, target_modules)
-        logger.info(f"create {module_class.__name__} for UNet/DiT: {len(self.unet_loras)} modules.")
+        print(f"create {module_class.__name__} for UNet/DiT: {len(self.unet_loras)} modules.")
 
         if verbose:
             for lora in self.unet_loras:
-                logger.info(f"\t{lora.lora_name:60} {lora.lora_dim}, {lora.alpha}")
+                print(f"\t{lora.lora_name:60} {lora.lora_dim}, {lora.alpha}")
 
         skipped = skipped_te + skipped_un
         if verbose and len(skipped) > 0:
-            logger.warning(f"dim (rank) is 0, {len(skipped)} modules are skipped:")
+            print(f"dim (rank) is 0, {len(skipped)} modules are skipped:")
             for name in skipped:
-                logger.info(f"\t{name}")
+                print(f"\t{name}")
 
         # assertion: no duplicate names
         names = set()
@@ -308,12 +308,12 @@ class AdditionalNetwork(torch.nn.Module):
 
     def apply_to(self, text_encoders, unet, apply_text_encoder=True, apply_unet=True):
         if apply_text_encoder:
-            logger.info(f"enable modules for text encoder: {len(self.text_encoder_loras)} modules")
+            print(f"enable modules for text encoder: {len(self.text_encoder_loras)} modules")
         else:
             self.text_encoder_loras = []
 
         if apply_unet:
-            logger.info(f"enable modules for UNet/DiT: {len(self.unet_loras)} modules")
+            print(f"enable modules for UNet/DiT: {len(self.unet_loras)} modules")
         else:
             self.unet_loras = []
 
@@ -336,12 +336,12 @@ class AdditionalNetwork(torch.nn.Module):
                 apply_unet = True
 
         if apply_text_encoder:
-            logger.info("enable modules for text encoder")
+            print("enable modules for text encoder")
         else:
             self.text_encoder_loras = []
 
         if apply_unet:
-            logger.info("enable modules for UNet/DiT")
+            print("enable modules for UNet/DiT")
         else:
             self.unet_loras = []
 
@@ -352,15 +352,15 @@ class AdditionalNetwork(torch.nn.Module):
                     sd_for_lora[key[len(lora.lora_name) + 1 :]] = weights_sd[key]
             lora.merge_to(sd_for_lora, dtype, device)
 
-        logger.info("weights are merged")
+        print("weights are merged")
 
     def set_loraplus_lr_ratio(self, loraplus_lr_ratio, loraplus_unet_lr_ratio, loraplus_text_encoder_lr_ratio):
         self.loraplus_lr_ratio = loraplus_lr_ratio
         self.loraplus_unet_lr_ratio = loraplus_unet_lr_ratio
         self.loraplus_text_encoder_lr_ratio = loraplus_text_encoder_lr_ratio
 
-        logger.info(f"LoRA+ UNet LR Ratio: {self.loraplus_unet_lr_ratio or self.loraplus_lr_ratio}")
-        logger.info(f"LoRA+ Text Encoder LR Ratio: {self.loraplus_text_encoder_lr_ratio or self.loraplus_lr_ratio}")
+        print(f"LoRA+ UNet LR Ratio: {self.loraplus_unet_lr_ratio or self.loraplus_lr_ratio}")
+        print(f"LoRA+ Text Encoder LR Ratio: {self.loraplus_text_encoder_lr_ratio or self.loraplus_lr_ratio}")
 
     def prepare_optimizer_params_with_multiple_te_lrs(self, text_encoder_lr, unet_lr, default_lr):
         if text_encoder_lr is None or (isinstance(text_encoder_lr, list) and len(text_encoder_lr) == 0):
@@ -385,7 +385,7 @@ class AdditionalNetwork(torch.nn.Module):
                 for i, (regex_str, reg_lr) in enumerate(reg_lrs_list):
                     if re.fullmatch(regex_str, lora.original_name):
                         matched_reg_lr = (i, reg_lr)
-                        logger.info(f"Module {lora.original_name} matched regex '{regex_str}' -> LR {reg_lr}")
+                        print(f"Module {lora.original_name} matched regex '{regex_str}' -> LR {reg_lr}")
                         break
 
                 for name, param in lora.named_parameters():
@@ -419,7 +419,7 @@ class AdditionalNetwork(torch.nn.Module):
                     else:
                         param_data["lr"] = reg_lr
                     if param_data.get("lr", None) == 0 or param_data.get("lr", None) is None:
-                        logger.info("NO LR skipping!")
+                        print("NO LR skipping!")
                         continue
                     params.append(param_data)
                     desc = f"reg_lr_{group_key.split('_')[-1]}"
@@ -435,7 +435,7 @@ class AdditionalNetwork(torch.nn.Module):
                     else:
                         param_data["lr"] = lr
                 if param_data.get("lr", None) == 0 or param_data.get("lr", None) is None:
-                    logger.info("NO LR skipping!")
+                    print("NO LR skipping!")
                     continue
                 params.append(param_data)
                 descriptions.append("plus" if key == "plus" else "")
@@ -448,7 +448,7 @@ class AdditionalNetwork(torch.nn.Module):
                 te_loras = [lora for lora in self.text_encoder_loras if lora.lora_name.startswith(te_prefix)]
                 if len(te_loras) > 0:
                     te_lr = text_encoder_lr[te_idx] if te_idx < len(text_encoder_lr) else text_encoder_lr[0]
-                    logger.info(f"Text Encoder {te_idx+1} ({te_prefix}): {len(te_loras)} modules, LR {te_lr}")
+                    print(f"Text Encoder {te_idx+1} ({te_prefix}): {len(te_loras)} modules, LR {te_lr}")
                     params, descriptions = assemble_params(te_loras, te_lr, loraplus_ratio)
                     all_params.extend(params)
                     lr_descriptions.extend([f"textencoder {te_idx+1}" + (" " + d if d else "") for d in descriptions])

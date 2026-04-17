@@ -216,13 +216,13 @@ def get_anima_param_groups(
         else:
             base_params.append(p)
 
-    logger.info(f"Parameter groups:")
-    logger.info(f"  base_params: {len(base_params)} (lr={base_lr})")
-    logger.info(f"  self_attn_params: {len(self_attn_params)} (lr={self_attn_lr})")
-    logger.info(f"  cross_attn_params: {len(cross_attn_params)} (lr={cross_attn_lr})")
-    logger.info(f"  mlp_params: {len(mlp_params)} (lr={mlp_lr})")
-    logger.info(f"  mod_params: {len(mod_params)} (lr={mod_lr})")
-    logger.info(f"  llm_adapter_params: {len(llm_adapter_params)} (lr={llm_adapter_lr})")
+    print(f"Parameter groups:")
+    print(f"  base_params: {len(base_params)} (lr={base_lr})")
+    print(f"  self_attn_params: {len(self_attn_params)} (lr={self_attn_lr})")
+    print(f"  cross_attn_params: {len(cross_attn_params)} (lr={cross_attn_lr})")
+    print(f"  mlp_params: {len(mlp_params)} (lr={mlp_lr})")
+    print(f"  mod_params: {len(mod_params)} (lr={mod_lr})")
+    print(f"  llm_adapter_params: {len(llm_adapter_params)} (lr={llm_adapter_lr})")
 
     param_groups = []
     for lr, params, name in [
@@ -236,12 +236,12 @@ def get_anima_param_groups(
         if lr == 0:
             for p in params:
                 p.requires_grad_(False)
-            logger.info(f"  Frozen {name} params ({len(params)} parameters)")
+            print(f"  Frozen {name} params ({len(params)} parameters)")
         elif len(params) > 0:
             param_groups.append({"params": params, "lr": lr})
 
     total_trainable = sum(p.numel() for group in param_groups for p in group["params"] if p.requires_grad)
-    logger.info(f"Total trainable parameters: {total_trainable:,}")
+    print(f"Total trainable parameters: {total_trainable:,}")
 
     return param_groups
 
@@ -411,9 +411,9 @@ def sample_images(
             if steps % args.sample_every_n_steps != 0 or epoch is not None:
                 return
 
-    logger.info(f"Generating sample images at step {steps}")
+    print(f"Generating sample images at step {steps}")
     if not os.path.isfile(args.sample_prompts) and sample_prompts_te_outputs is None:
-        logger.error(f"No prompt file: {args.sample_prompts}")
+        print(f"No prompt file: {args.sample_prompts}")
         return
 
     # Unwrap models
@@ -500,7 +500,7 @@ def _sample_image_inference(
     height = max(64, height - height % 16)
     width = max(64, width - width % 16)
 
-    logger.info(
+    print(
         f"  prompt: {prompt}, size: {width}x{height}, steps: {sample_steps}, scale: {scale}, flow_shift: {flow_shift}, seed: {seed}"
     )
 
@@ -516,7 +516,7 @@ def _sample_image_inference(
 
     encoded = encode_prompt(prompt)
     if encoded is None:
-        logger.warning("Cannot encode prompt, skipping sample")
+        print("Cannot encode prompt, skipping sample")
         return
 
     prompt_embeds, attn_mask, t5_input_ids, t5_attn_mask = encoded

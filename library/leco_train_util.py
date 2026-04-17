@@ -82,7 +82,7 @@ def save_weights(
 
     unwrapped = accelerator.unwrap_model(network)
     unwrapped.save_weights(ckpt_file, save_dtype, metadata)
-    logger.info(f"saved model to: {ckpt_file}")
+    print(f"saved model to: {ckpt_file}")
 
 
 

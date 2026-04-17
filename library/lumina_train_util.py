@@ -151,15 +151,15 @@ def sample_images(
         args.sample_prompts is not None
     ), "No sample prompts found. Provide `--sample_prompts` / サンプルプロンプトが見つかりません。`--sample_prompts` を指定してください"
 
-    logger.info("")
-    logger.info(
+    print("")
+    print(
         f"generating sample images at step / サンプル画像生成 ステップ: {global_step}"
     )
     if (
         not os.path.isfile(args.sample_prompts)
         and sample_prompts_gemma2_outputs is None
     ):
-        logger.error(
+        print(
             f"No prompt file / プロンプトファイルがありません: {args.sample_prompts}"
         )
         return
@@ -321,15 +321,15 @@ def sample_image_inference(
 
         if negative_prompt is None:
             negative_prompt = ""
-        logger.info(f"prompt: {prompt}")
-        logger.info(f"negative_prompt: {negative_prompt}")
-        logger.info(f"height: {height}")
-        logger.info(f"width: {width}")
-        logger.info(f"sample_steps: {sample_steps}")
-        logger.info(f"scale: {guidance_scale}")
-        logger.info(f"trunc: {cfg_trunc_ratio}")
-        logger.info(f"renorm: {renorm_cfg}")
-        # logger.info(f"sample_sampler: {sampler_name}")
+        print(f"prompt: {prompt}")
+        print(f"negative_prompt: {negative_prompt}")
+        print(f"height: {height}")
+        print(f"width: {width}")
+        print(f"sample_steps: {sample_steps}")
+        print(f"scale: {guidance_scale}")
+        print(f"trunc: {cfg_trunc_ratio}")
+        print(f"renorm: {renorm_cfg}")
+        # print(f"sample_sampler: {sampler_name}")
 
 
         # No need to add system prompt here, as it has been handled in the tokenize_strategy
@@ -340,11 +340,11 @@ def sample_image_inference(
 
         if sample_prompts_gemma2_outputs and prompt in sample_prompts_gemma2_outputs:
             gemma2_conds = sample_prompts_gemma2_outputs[prompt]
-            logger.info(f"Using cached Gemma2 outputs for prompt: {prompt}")
+            print(f"Using cached Gemma2 outputs for prompt: {prompt}")
 
         if sample_prompts_gemma2_outputs and negative_prompt in sample_prompts_gemma2_outputs:
             neg_gemma2_conds = sample_prompts_gemma2_outputs[negative_prompt]
-            logger.info(f"Using cached Gemma2 outputs for negative prompt: {negative_prompt}")
+            print(f"Using cached Gemma2 outputs for negative prompt: {negative_prompt}")
 
         # Only encode if not found in cache
         if gemma2_conds is None and gemma2_model is not None:
@@ -360,7 +360,7 @@ def sample_image_inference(
             )
 
         if gemma2_conds is None or neg_gemma2_conds is None:
-            logger.error(f"Cannot generate sample: no cached outputs and no text encoder available for prompt: {prompt}")
+            print(f"Cannot generate sample: no cached outputs and no text encoder available for prompt: {prompt}")
             continue
 
         # Unpack Gemma2 outputs
