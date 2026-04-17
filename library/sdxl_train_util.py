@@ -104,13 +104,6 @@ def _load_target_model(
 
         text_encoder1 = pipe.text_encoder
         text_encoder2 = pipe.text_encoder_2
-
-        # convert to fp32 for cache text_encoders outputs
-        if text_encoder1.dtype != torch.float32:
-            text_encoder1 = text_encoder1.to(dtype=torch.float32)
-        if text_encoder2.dtype != torch.float32:
-            text_encoder2 = text_encoder2.to(dtype=torch.float32)
-
         vae = pipe.vae
         unet = pipe.unet
         del pipe
@@ -119,7 +112,7 @@ def _load_target_model(
         state_dict = sdxl_model_util.convert_diffusers_unet_state_dict_to_sdxl(unet.state_dict())
         with init_empty_weights():
             unet = sdxl_original_unet.SdxlUNet2DConditionModel()  # overwrite unet
-        sdxl_model_util._load_state_dict_on_device(unet, state_dict, device=device, dtype=model_dtype)
+        sdxl_model_util._load_state_dict_on_device(unet, state_dict, device=device)
         print("U-Net converted to original U-Net")
 
         logit_scale = None
