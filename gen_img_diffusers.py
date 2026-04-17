@@ -369,7 +369,7 @@ class PipelineLike:
         safety_checker ([`StableDiffusionSafetyChecker`]):
             Classification module that estimates whether generated images could be considered offensive or harmful.
             Please, refer to the [model card](https://huggingface.co/CompVis/stable-diffusion-v1-4) for details.
-        feature_extractor ([`CLIPFeatureExtractor`]):
+        feature_extractor ([`CLIPImageProcessor`]):
             Model that extracts features from generated images to be used as inputs for the `safety_checker`.
     """
 
@@ -389,7 +389,7 @@ class PipelineLike:
         vgg16_guidance_scale: float,
         vgg16_layer_no: int,
         # safety_checker: StableDiffusionSafetyChecker,
-        # feature_extractor: CLIPFeatureExtractor,
+        # feature_extractor: CLIPImageProcessor,
     ):
         super().__init__()
         self.device = device
