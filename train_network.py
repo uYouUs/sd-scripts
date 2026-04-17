@@ -12,6 +12,15 @@ import json
 from multiprocessing import Value
 import numpy as np
 
+from tqdm.auto import tqdm as original_tqdm
+
+def custom_tqdm(*args, **kwargs):
+    kwargs.setdefault("position", 0)  # force position
+    kwargs.setdefault("leave", True)  # force position
+    return original_tqdm(*args, **kwargs)
+
+import tqdm.auto
+tqdm.auto.tqdm = custom_tqdm
 from tqdm import tqdm
 
 import torch
@@ -51,6 +60,7 @@ setup_logging()
 import logging
 
 logger = logging.getLogger(__name__)
+logging.disable(logging.CRITICAL)
 
 
 class NetworkTrainer:
