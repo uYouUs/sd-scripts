@@ -42,7 +42,7 @@ def convert(args):
         )
     else:
         pipe = StableDiffusionPipeline.from_pretrained(
-            args.model_to_load, torch_dtype=load_dtype, tokenizer=None, safety_checker=None, variant=args.variant
+            args.model_to_load, torch_dtype=load_dtype, tokenizer=None, safety_checker=None
         )
         text_encoder = pipe.text_encoder
         vae = pipe.vae

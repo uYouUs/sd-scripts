@@ -501,9 +501,9 @@ if __name__ == "__main__":
     pipe: Union[StableDiffusionPipeline, StableDiffusionXLPipeline]
     if args.sdxl:
         # use_safetensors=True does not work with 0.18.2
-        pipe = StableDiffusionXLPipeline.from_pretrained(args.model_id, variant="fp16", torch_dtype=torch.float16)
+        pipe = StableDiffusionXLPipeline.from_pretrained(args.model_id, torch_dtype=torch.float16)
     else:
-        pipe = StableDiffusionPipeline.from_pretrained(args.model_id, variant="fp16", torch_dtype=torch.float16)
+        pipe = StableDiffusionPipeline.from_pretrained(args.model_id, torch_dtype=torch.float16)
     pipe.to(device)
     pipe.set_use_memory_efficient_attention_xformers(True)
 
